@@ -1,6 +1,6 @@
 {
  "name": "impact_flash",
- "description": "One-shot impact: a 0.25 s bright flash plus a ring of fast sparks slowed by drag.",
+ "description": "One-shot impact: a 0.12 s orange flash plus 60 velocity-stretched sparks flung out, slowed by drag and falling with gravity. Colors are tuned for an additive material with an emissive boost (about 6x, e.g. a soft radial mask); with DefaultSpriteMaterial raise them.",
  "placeholders": {
   "SystemPath": "/Game/FX/NS_ImpactFlash",
   "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
@@ -78,7 +78,7 @@
     "EmitterName": "Flash",
     "Module": "Initialize Particle",
     "Input": "Lifetime",
-    "Value": "0.25"
+    "Value": "0.12"
    }
   },
   {
@@ -98,7 +98,7 @@
     "EmitterName": "Flash",
     "Module": "Initialize Particle",
     "Input": "Uniform Sprite Size",
-    "Value": "220"
+    "Value": "200"
    }
   },
   {
@@ -108,7 +108,7 @@
     "EmitterName": "Flash",
     "Module": "Color",
     "Input": "Color",
-    "Value": "=lerp(lerp(float4(1, 1, 0.9, 1), float4(1, 0.7, 0.3, 0.6), saturate(Particles.NormalizedAge / 0.3)), float4(1, 0.3, 0.1, 0), saturate((Particles.NormalizedAge - 0.3) / (1.0 - 0.3)))"
+    "Value": "=lerp(lerp(float4(0.6, 0.35, 0.12, 1), float4(0.5, 0.16, 0.03, 0.5), saturate(Particles.NormalizedAge / 0.25)), float4(0.15, 0.03, 0.01, 0), saturate((Particles.NormalizedAge - 0.25) / (1.0 - 0.25)))"
    }
   },
   {
@@ -162,6 +162,15 @@
     "System": "{{SystemPath}}",
     "EmitterName": "Ring",
     "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/GravityForce.GravityForce"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "StackName": "ParticleUpdate",
     "ModuleScript": "/Niagara/Modules/Update/Forces/Drag.Drag"
    }
   },
@@ -200,7 +209,7 @@
     "EmitterName": "Ring",
     "Module": "Spawn Burst Instantaneous",
     "Input": "Spawn Count",
-    "Value": "40"
+    "Value": "60"
    }
   },
   {
@@ -220,7 +229,7 @@
     "EmitterName": "Ring",
     "Module": "Add Velocity from Point",
     "Input": "Velocity Strength",
-    "Value": "500"
+    "Value": "900"
    }
   },
   {
@@ -230,7 +239,7 @@
     "EmitterName": "Ring",
     "Module": "Drag",
     "Input": "Drag",
-    "Value": "4"
+    "Value": "3.5"
    }
   },
   {
@@ -270,7 +279,7 @@
     "EmitterName": "Ring",
     "Module": "Initialize Particle",
     "Input": "Sprite Size Mode",
-    "Value": "Random Uniform"
+    "Value": "Random Non-Uniform"
    }
   },
   {
@@ -279,8 +288,8 @@
     "System": "{{SystemPath}}",
     "EmitterName": "Ring",
     "Module": "Initialize Particle",
-    "Input": "Uniform Sprite Size Min",
-    "Value": "6"
+    "Input": "Sprite Size Min",
+    "Value": "(X=5,Y=26)"
    }
   },
   {
@@ -289,8 +298,18 @@
     "System": "{{SystemPath}}",
     "EmitterName": "Ring",
     "Module": "Initialize Particle",
-    "Input": "Uniform Sprite Size Max",
-    "Value": "12"
+    "Input": "Sprite Size Max",
+    "Value": "(X=8,Y=44)"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "RendererIndex": 0,
+    "PropertyName": "Alignment",
+    "Value": "VelocityAligned"
    }
   },
   {
@@ -300,7 +319,7 @@
     "EmitterName": "Ring",
     "Module": "Color",
     "Input": "Color",
-    "Value": "=lerp(lerp(float4(1, 0.9, 0.6, 1), float4(1, 0.5, 0.1, 0.8), saturate(Particles.NormalizedAge / 0.5)), float4(0.8, 0.2, 0.05, 0), saturate((Particles.NormalizedAge - 0.5) / (1.0 - 0.5)))"
+    "Value": "=lerp(lerp(float4(0.8, 0.5, 0.2, 1), float4(0.7, 0.22, 0.04, 1), saturate(Particles.NormalizedAge / 0.4)), float4(0.3, 0.05, 0.01, 0), saturate((Particles.NormalizedAge - 0.4) / (1.0 - 0.4)))"
    }
   }
  ]

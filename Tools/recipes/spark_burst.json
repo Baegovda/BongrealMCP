@@ -1,6 +1,6 @@
 {
  "name": "spark_burst",
- "description": "One-shot burst of 80 velocity-aligned sparks flung outwards that fall with gravity and drag.",
+ "description": "One-shot burst of 140 velocity-aligned sparks flung outwards that cool from white-hot to red and fall with gravity and drag. Colors are tuned for an additive material with an emissive boost (about 6x, e.g. a soft radial mask); with DefaultSpriteMaterial raise them.",
  "placeholders": {
   "SystemPath": "/Game/FX/NS_SparkBurst",
   "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
@@ -113,7 +113,7 @@
     "EmitterName": "Sparks",
     "Module": "Spawn Burst Instantaneous",
     "Input": "Spawn Count",
-    "Value": "80"
+    "Value": "140"
    }
   },
   {
@@ -133,7 +133,7 @@
     "EmitterName": "Sparks",
     "Module": "Add Velocity from Point",
     "Input": "Velocity Strength",
-    "Value": "600"
+    "Value": "1000"
    }
   },
   {
@@ -143,7 +143,7 @@
     "EmitterName": "Sparks",
     "Module": "Drag",
     "Input": "Drag",
-    "Value": "2"
+    "Value": "2.5"
    }
   },
   {
@@ -153,7 +153,7 @@
     "EmitterName": "Sparks",
     "Module": "Initialize Particle",
     "Input": "Sprite Size Mode",
-    "Value": "Non-Uniform"
+    "Value": "Random Non-Uniform"
    }
   },
   {
@@ -162,8 +162,18 @@
     "System": "{{SystemPath}}",
     "EmitterName": "Sparks",
     "Module": "Initialize Particle",
-    "Input": "Sprite Size",
-    "Value": "2, 18"
+    "Input": "Sprite Size Min",
+    "Value": "(X=3,Y=24)"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Sparks",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Max",
+    "Value": "(X=6,Y=55)"
    }
   },
   {
@@ -213,7 +223,7 @@
     "EmitterName": "Sparks",
     "Module": "Color",
     "Input": "Color",
-    "Value": "=lerp(lerp(float4(1, 0.95, 0.7, 1), float4(1, 0.6, 0.15, 1), saturate(Particles.NormalizedAge / 0.5)), float4(0.9, 0.2, 0.05, 0), saturate((Particles.NormalizedAge - 0.5) / (1.0 - 0.5)))"
+    "Value": "=lerp(lerp(float4(0.9, 0.7, 0.4, 1), float4(0.8, 0.35, 0.06, 1), saturate(Particles.NormalizedAge / 0.35)), float4(0.35, 0.06, 0.01, 0), saturate((Particles.NormalizedAge - 0.35) / (1.0 - 0.35)))"
    }
   }
  ]

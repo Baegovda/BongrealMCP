@@ -1,6 +1,6 @@
 {
  "name": "magic_orb",
- "description": "Cyan-to-violet motes swirling around and drawn toward the center (vortex + point attraction).",
+ "description": "Glowing blue core with cyan-to-violet motes swirling around it and drawn toward the center (vortex + point attraction). Colors are tuned for an additive material with an emissive boost (about 6x, e.g. a soft radial mask); with DefaultSpriteMaterial raise them.",
  "placeholders": {
   "SystemPath": "/Game/FX/NS_MagicOrb",
   "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
@@ -103,7 +103,7 @@
     "EmitterName": "Motes",
     "Module": "Spawn Rate",
     "Input": "SpawnRate",
-    "Value": "90"
+    "Value": "140"
    }
   },
   {
@@ -173,7 +173,7 @@
     "EmitterName": "Motes",
     "Module": "Initialize Particle",
     "Input": "Uniform Sprite Size Min",
-    "Value": "4"
+    "Value": "8"
    }
   },
   {
@@ -183,7 +183,7 @@
     "EmitterName": "Motes",
     "Module": "Initialize Particle",
     "Input": "Uniform Sprite Size Max",
-    "Value": "10"
+    "Value": "16"
    }
   },
   {
@@ -193,7 +193,103 @@
     "EmitterName": "Motes",
     "Module": "Color",
     "Input": "Color",
-    "Value": "=lerp(lerp(float4(0.3, 0.9, 1, 0), float4(0.4, 0.8, 1, 1), saturate(Particles.NormalizedAge / 0.3)), float4(0.6, 0.3, 1, 0), saturate((Particles.NormalizedAge - 0.3) / (1.0 - 0.3)))"
+    "Value": "=lerp(lerp(float4(0.02, 0.25, 0.5, 0), float4(0.04, 0.3, 0.6, 0.9), saturate(Particles.NormalizedAge / 0.3)), float4(0.25, 0.05, 0.5, 0), saturate((Particles.NormalizedAge - 0.3) / (1.0 - 0.3)))"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnRate.SpawnRate"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Spawn Rate",
+    "Input": "SpawnRate",
+    "Value": "6"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime",
+    "Value": "0.8"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size",
+    "Value": "90"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Rotation Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(0.05, 0.4, 0.8, 0), float4(0.08, 0.45, 0.9, 0.35), saturate(Particles.NormalizedAge / 0.4)), float4(0.2, 0.1, 0.6, 0), saturate((Particles.NormalizedAge - 0.4) / (1.0 - 0.4)))"
    }
   }
  ]
