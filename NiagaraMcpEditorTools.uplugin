@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 8,
-	"VersionName": "0.5.3",
+	"Version": 9,
+	"VersionName": "0.5.4",
 	"FriendlyName": "Niagara MCP Editor Tools",
 	"Description": "Transactional Niagara graph authoring, inspection, and module stack notes through the engine Toolset Registry.",
 	"Category": "Editor",

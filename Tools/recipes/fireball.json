@@ -1,9 +1,10 @@
 {
  "name": "fireball",
- "description": "Looping fireball orb: hot core, rising curling flames and falling sparks. For the soft look use an additive radial material as SpriteMaterial.",
+ "description": "Looping fireball: hot spinning core, rising curling flames, falling sparks, dark smoke above, a soft orange halo and a point light (user parameter LightRadius). SpriteMaterial: additive radial material with an emissive boost (about 6x); SmokeMaterial: translucent (a smoke texture looks best). Warms up 0.5 s so it starts full.",
  "placeholders": {
   "SystemPath": "/Game/FX/NS_Fireball",
-  "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
+  "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial",
+  "SmokeMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
  },
  "usage": "Replace every {{Placeholder}} (defaults above), turn each Arguments object into a JSON string and run the operations with ExecuteBatch(Operations, Expect=expect). Python: McpClient().recipe(name, SystemPath=...).",
  "expect": "Compiles:{{SystemPath}};Valid:{{SystemPath}};Particles:{{SystemPath}}:Any@0.5>=1",
@@ -244,6 +245,84 @@
    "Tool": "AddModule",
    "Arguments": {
     "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Size/ScaleSpriteSize.ScaleSpriteSize"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Orientation/SpriteRotationRate.SpriteRotationRate"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Rotation Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Scale Sprite Size",
+    "Input": "Scale Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Scale Sprite Size",
+    "Input": "Uniform Scale Factor",
+    "Value": "=lerp(lerp(0.6, 1.0, saturate(Particles.NormalizedAge / 0.3)), 0.4, saturate((Particles.NormalizedAge - 0.3) / (1.0 - 0.3)))"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate",
+    "Value": "Dynamic:/Niagara/DynamicInputs/UniformRange/UniformRangedFloat.UniformRangedFloat"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate/Minimum",
+    "Value": "-120"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate/Maximum",
+    "Value": "120"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
     "EmitterName": "Flames",
     "StackName": "ParticleSpawn",
     "ModuleScript": "/Niagara/Modules/Spawn/Velocity/AddVelocity.AddVelocity"
@@ -283,7 +362,7 @@
     "EmitterName": "Flames",
     "Module": "Spawn Rate",
     "Input": "SpawnRate",
-    "Value": "120"
+    "Value": "140"
    }
   },
   {
@@ -314,6 +393,16 @@
     "Module": "Curl Noise Force",
     "Input": "Noise Strength",
     "Value": "220"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "Module": "Curl Noise Force",
+    "Input": "Noise Frequency",
+    "Value": "0.03"
    }
   },
   {
@@ -394,6 +483,84 @@
     "Module": "Color",
     "Input": "Color",
     "Value": "=lerp(lerp(float4(1, 0.6, 0.15, 1), float4(1, 0.3, 0.04, 0.7), saturate(Particles.NormalizedAge / 0.4)), float4(0.4, 0.04, 0.01, 0), saturate((Particles.NormalizedAge - 0.4) / (1.0 - 0.4)))"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Size/ScaleSpriteSize.ScaleSpriteSize"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Orientation/SpriteRotationRate.SpriteRotationRate"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Rotation Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "Module": "Scale Sprite Size",
+    "Input": "Scale Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "Module": "Scale Sprite Size",
+    "Input": "Uniform Scale Factor",
+    "Value": "=lerp(lerp(0.8, 1.3, saturate(Particles.NormalizedAge / 0.4)), 0.2, saturate((Particles.NormalizedAge - 0.4) / (1.0 - 0.4)))"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate",
+    "Value": "Dynamic:/Niagara/DynamicInputs/UniformRange/UniformRangedFloat.UniformRangedFloat"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate/Minimum",
+    "Value": "-120"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flames",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate/Maximum",
+    "Value": "120"
    }
   },
   {
@@ -540,6 +707,417 @@
     "Module": "Color",
     "Input": "Color",
     "Value": "=lerp(lerp(float4(1, 0.9, 0.5, 1), float4(1, 0.55, 0.12, 1), saturate(Particles.NormalizedAge / 0.6)), float4(1, 0.25, 0.05, 0), saturate((Particles.NormalizedAge - 0.6) / (1.0 - 0.6)))"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SmokeMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnRate.SpawnRate"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Location/SphereLocation.SphereLocation"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Velocity/AddVelocity.AddVelocity"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/CurlNoiseForce.CurlNoiseForce"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/Drag.Drag"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Solvers/SolveForcesAndVelocity.SolveForcesAndVelocity"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Spawn Rate",
+    "Input": "SpawnRate",
+    "Value": "22"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Sphere Location",
+    "Input": "Sphere Radius",
+    "Value": "25"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Sphere Location",
+    "Input": "Offset",
+    "Value": "0, 0, 35"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Add Velocity",
+    "Input": "Velocity",
+    "Value": "0, 0, 110"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Curl Noise Force",
+    "Input": "Noise Strength",
+    "Value": "60"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Drag",
+    "Input": "Drag",
+    "Value": "0.8"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Min",
+    "Value": "1.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Max",
+    "Value": "1.5"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Random Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size Min",
+    "Value": "60"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size Max",
+    "Value": "90"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(0.07, 0.055, 0.05, 0), float4(0.07, 0.055, 0.05, 0.45), saturate(Particles.NormalizedAge / 0.25)), float4(0.05, 0.05, 0.05, 0), saturate((Particles.NormalizedAge - 0.25) / (1.0 - 0.25)))"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Size/ScaleSpriteSize.ScaleSpriteSize"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Orientation/SpriteRotationRate.SpriteRotationRate"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Rotation Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Scale Sprite Size",
+    "Input": "Scale Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Scale Sprite Size",
+    "Input": "Uniform Scale Factor",
+    "Value": "=lerp(lerp(0.6, 1.3, saturate(Particles.NormalizedAge / 0.5)), 2.0, saturate((Particles.NormalizedAge - 0.5) / (1.0 - 0.5)))"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate",
+    "Value": "Dynamic:/Niagara/DynamicInputs/UniformRange/UniformRangedFloat.UniformRangedFloat"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate/Minimum",
+    "Value": "-120"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate/Maximum",
+    "Value": "120"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnRate.SpawnRate"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "Module": "Spawn Rate",
+    "Input": "SpawnRate",
+    "Value": "4"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime",
+    "Value": "0.6"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "Module": "Initialize Particle",
+    "Input": "Color Mode",
+    "Value": "Direct Set"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "Module": "Initialize Particle",
+    "Input": "Color",
+    "Value": "1, 0.3, 0.04, 0.08"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size",
+    "Value": "240"
+   }
+  },
+  {
+   "Tool": "AddRenderer",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "RendererType": "Light"
+   }
+  },
+  {
+   "Tool": "SetUserParameter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "ParameterName": "LightRadius",
+    "Type": "float",
+    "DefaultValue": "450"
+   }
+  },
+  {
+   "Tool": "SetRendererBinding",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Glow",
+    "RendererIndex": 1,
+    "BindingName": "RadiusBinding",
+    "Variable": "User.LightRadius"
+   }
+  },
+  {
+   "Tool": "SetSystemProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "PropertyName": "WarmupTime",
+    "Value": "0.5"
    }
   }
  ]
