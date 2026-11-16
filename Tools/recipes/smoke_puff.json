@@ -1,0 +1,249 @@
+{
+ "name": "smoke_puff",
+ "description": "Slow rising dark smoke with curl noise and spin. Preview on a Grey background (dark smoke disappears on black); use a translucent SpriteMaterial.",
+ "placeholders": {
+  "SystemPath": "/Game/FX/NS_SmokePuff",
+  "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
+ },
+ "usage": "Replace every {{Placeholder}} (defaults above), turn each Arguments object into a JSON string and run the operations with ExecuteBatch(Operations, Expect=expect). Python: McpClient().recipe(name, SystemPath=...).",
+ "expect": "Compiles:{{SystemPath}};Valid:{{SystemPath}};Particles:{{SystemPath}}:Any@0.5>=1",
+ "operations": [
+  {
+   "Id": "sys",
+   "Tool": "CreateSystem",
+   "Arguments": {
+    "AssetPath": "{{SystemPath}}"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnRate.SpawnRate"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Location/SphereLocation.SphereLocation"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Velocity/AddVelocity.AddVelocity"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/CurlNoiseForce.CurlNoiseForce"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/Drag.Drag"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Solvers/SolveForcesAndVelocity.SolveForcesAndVelocity"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Orientation/SpriteRotationRate.SpriteRotationRate"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Spawn Rate",
+    "Input": "SpawnRate",
+    "Value": "25"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Sphere Location",
+    "Input": "Sphere Radius",
+    "Value": "20"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Add Velocity",
+    "Input": "Velocity",
+    "Value": "0, 0, 90"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Curl Noise Force",
+    "Input": "Noise Strength",
+    "Value": "60"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Drag",
+    "Input": "Drag",
+    "Value": "0.8"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Rotation Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Sprite Rotation Rate",
+    "Input": "Rotation Rate",
+    "Value": "40"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Min",
+    "Value": "1.2"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Max",
+    "Value": "1.8"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Random Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size Min",
+    "Value": "50"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size Max",
+    "Value": "90"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Smoke",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(0.1, 0.09, 0.08, 0), float4(0.1, 0.09, 0.08, 0.5), saturate(Particles.NormalizedAge / 0.2)), float4(0.06, 0.06, 0.06, 0), saturate((Particles.NormalizedAge - 0.2) / (1.0 - 0.2)))"
+   }
+  }
+ ]
+}

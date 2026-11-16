@@ -1,0 +1,307 @@
+{
+ "name": "impact_flash",
+ "description": "One-shot impact: a 0.25 s bright flash plus a ring of fast sparks slowed by drag.",
+ "placeholders": {
+  "SystemPath": "/Game/FX/NS_ImpactFlash",
+  "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
+ },
+ "usage": "Replace every {{Placeholder}} (defaults above), turn each Arguments object into a JSON string and run the operations with ExecuteBatch(Operations, Expect=expect). Python: McpClient().recipe(name, SystemPath=...).",
+ "expect": "Compiles:{{SystemPath}};Valid:{{SystemPath}};Particles:{{SystemPath}}:Any@0.1>=1",
+ "operations": [
+  {
+   "Id": "sys",
+   "Tool": "CreateSystem",
+   "Arguments": {
+    "AssetPath": "{{SystemPath}}"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnBurst_Instantaneous.SpawnBurst_Instantaneous"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Emitter State",
+    "Input": "Loop Behavior",
+    "Value": "Once"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Count",
+    "Value": "1"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime",
+    "Value": "0.25"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size",
+    "Value": "220"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(1, 1, 0.9, 1), float4(1, 0.7, 0.3, 0.6), saturate(Particles.NormalizedAge / 0.3)), float4(1, 0.3, 0.1, 0), saturate((Particles.NormalizedAge - 0.3) / (1.0 - 0.3)))"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnBurst_Instantaneous.SpawnBurst_Instantaneous"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Location/SphereLocation.SphereLocation"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Velocity/AddVelocityFromPoint.AddVelocityFromPoint"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/Drag.Drag"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Solvers/SolveForcesAndVelocity.SolveForcesAndVelocity"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Emitter State",
+    "Input": "Loop Behavior",
+    "Value": "Once"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Count",
+    "Value": "40"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Sphere Location",
+    "Input": "Sphere Radius",
+    "Value": "8"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Add Velocity from Point",
+    "Input": "Velocity Strength",
+    "Value": "500"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Drag",
+    "Input": "Drag",
+    "Value": "4"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Min",
+    "Value": "0.3"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Max",
+    "Value": "0.6"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Random Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size Min",
+    "Value": "6"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size Max",
+    "Value": "12"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Ring",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(1, 0.9, 0.6, 1), float4(1, 0.5, 0.1, 0.8), saturate(Particles.NormalizedAge / 0.5)), float4(0.8, 0.2, 0.05, 0), saturate((Particles.NormalizedAge - 0.5) / (1.0 - 0.5)))"
+   }
+  }
+ ]
+}

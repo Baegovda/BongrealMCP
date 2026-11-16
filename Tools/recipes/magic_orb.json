@@ -1,0 +1,200 @@
+{
+ "name": "magic_orb",
+ "description": "Cyan-to-violet motes swirling around and drawn toward the center (vortex + point attraction).",
+ "placeholders": {
+  "SystemPath": "/Game/FX/NS_MagicOrb",
+  "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
+ },
+ "usage": "Replace every {{Placeholder}} (defaults above), turn each Arguments object into a JSON string and run the operations with ExecuteBatch(Operations, Expect=expect). Python: McpClient().recipe(name, SystemPath=...).",
+ "expect": "Compiles:{{SystemPath}};Valid:{{SystemPath}};Particles:{{SystemPath}}:Any@0.5>=1",
+ "operations": [
+  {
+   "Id": "sys",
+   "Tool": "CreateSystem",
+   "Arguments": {
+    "AssetPath": "{{SystemPath}}"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnRate.SpawnRate"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Location/SphereLocation.SphereLocation"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/VortexForce.VortexForce"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/PointAttractionForce.PointAttractionForce"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/Drag.Drag"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Solvers/SolveForcesAndVelocity.SolveForcesAndVelocity"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Spawn Rate",
+    "Input": "SpawnRate",
+    "Value": "90"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Sphere Location",
+    "Input": "Sphere Radius",
+    "Value": "60"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Drag",
+    "Input": "Drag",
+    "Value": "0.6"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Min",
+    "Value": "1.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Max",
+    "Value": "2.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Random Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size Min",
+    "Value": "4"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size Max",
+    "Value": "10"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Motes",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(0.3, 0.9, 1, 0), float4(0.4, 0.8, 1, 1), saturate(Particles.NormalizedAge / 0.3)), float4(0.6, 0.3, 1, 0), saturate((Particles.NormalizedAge - 0.3) / (1.0 - 0.3)))"
+   }
+  }
+ ]
+}

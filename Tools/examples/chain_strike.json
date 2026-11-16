@@ -1,0 +1,172 @@
+{
+  "materials": [
+    {
+      "path": "/Game/TestSample/M_ChainRibbon",
+      "properties": {
+        "MaterialDomain": "Surface",
+        "BlendMode": "Masked",
+        "ShadingModel": "Unlit",
+        "TwoSided": "true",
+        "bUsedWithNiagaraRibbons": "true"
+      },
+      "expressions": [
+        { "id": "UV", "class": "TextureCoordinate", "pos": [-800, 0] },
+        { "id": "Rings", "class": "Custom", "pos": [-400, -160],
+          "custom": {
+            "description": "Alternating interlocking rings",
+            "inputs": ["UV"],
+            "output": "Float1",
+            "code": [
+              "float x = frac(UV.x * 13.0 + 0.5) - 0.5;",
+              "float y = UV.y - 0.5;",
+              "float a = length(float2(max(abs(x) - 0.23, 0.0) / 0.45, y)) - 0.39;",
+              "float b = length(float2(max(0.50 - abs(x) - 0.14, 0.0) / 0.68, y)) - 0.195;",
+              "float link = abs(a) - 0.062;",
+              "float edgeLink = abs(b) - 0.049;",
+              "return 1.0 - step(0.0, min(link, edgeLink));"
+            ]
+          }
+        },
+        { "id": "Steel", "class": "Custom", "pos": [-400, 160],
+          "custom": {
+            "description": "Dark steel and hot red tip",
+            "inputs": ["UV"],
+            "output": "Float3",
+            "code": [
+              "float x = frac(UV.x * 13.0 + 0.5) - 0.5;",
+              "float y = UV.y - 0.5;",
+              "float a = length(float2(max(abs(x) - 0.23, 0.0) / 0.45, y)) - 0.39;",
+              "float b = length(float2(max(0.50 - abs(x) - 0.14, 0.0) / 0.68, y)) - 0.195;",
+              "float rim = saturate(1.0 - min(abs(a) / 0.062, abs(b) / 0.049));",
+              "float upper = saturate(0.55 - y * 1.1);",
+              "float3 metal = float3(0.080, 0.018, 0.022) + float3(0.37, 0.062, 0.048) * rim * upper;",
+              "float tip = pow(saturate(UV.x), 9.0);",
+              "return metal + float3(2.5, 0.17, 0.021) * tip * (0.30 + 0.70 * rim);"
+            ]
+          }
+        }
+      ],
+      "links": [
+        ["UV", "", "Rings", "UV"],
+        ["UV", "", "Steel", "UV"]
+      ],
+      "outputs": [
+        ["Rings", "", "OpacityMask"],
+        ["Steel", "", "EmissiveColor"]
+      ]
+    }
+  ],
+
+  "module_scripts": [
+    {
+      "path": "/Game/TestSample/NM_ChainStrikeMotion",
+      "description": "Drops a ribbon chain from above, shakes it on impact and pulls it back up.",
+      "stacks": ["ParticleSpawn", "ParticleUpdate"],
+      "nodes": [
+        { "id": "hlsl", "type": "CustomHlsl", "pos": [0, 250] }
+      ],
+      "pins": [
+        { "node": "@get", "name": "Particles.RibbonLinkOrder", "type": "float" },
+        { "node": "@get", "name": "Particles.Age", "type": "float" },
+        { "node": "@get", "name": "Module.LandingX", "type": "float", "default": "0" },
+        { "node": "@get", "name": "Module.LandingY", "type": "float", "default": "0" },
+        { "node": "@get", "name": "Module.Lean", "type": "float", "default": "-72" },
+        { "node": "@get", "name": "Module.Length", "type": "float", "default": "305" },
+        { "node": "@set", "name": "Particles.Position", "type": "position" },
+        { "node": "@set", "name": "Particles.RibbonWidth", "type": "float" }
+      ],
+      "hlsl": [
+        {
+          "node": "hlsl",
+          "inputs": [["U", "float"], ["Age", "float"], ["LandingX", "float"], ["LandingY", "float"], ["Lean", "float"], ["Length", "float"]],
+          "outputs": [["Position", "position"], ["Width", "float"]],
+          "code": [
+            "float u = saturate(U);",
+            "float descent = saturate(Age / 0.34);",
+            "float fall = (1.0 - descent * descent) * 440.0;",
+            "float impact = max(Age - 0.34, 0.0);",
+            "float shake = step(0.34, Age) * exp(-6.7 * impact);",
+            "float body = sin(u * 3.14159265);",
+            "float whip = body * (sin(u * 9.0 - Age * 17.0) * 17.0 * (1.0 - descent)",
+            "                + sin(impact * 26.0 - u * 10.0) * 27.0 * shake);",
+            "float depth = body * sin(impact * 19.0 - u * 8.0) * 15.0 * shake;",
+            "float lift = step(0.34, Age) * abs(sin(impact * 18.0)) * exp(-11.0 * impact) * 16.0;",
+            "float r = saturate((Age - 0.91) / 0.33);",
+            "float retract = r * r * (3.0 - 2.0 * r);",
+            "Position = float3(LandingX + (1.0 - u) * Lean + whip,",
+            "                  LandingY + depth + (1.0 - u) * Lean * 0.29,",
+            "                  5.0 + fall + (1.0 - u) * max(Length, 1.0) + u * lift + retract * 370.0);",
+            "float f = saturate((Age - 1.06) / 0.22);",
+            "Width = 18.0 * (1.0 - f * f * (3.0 - 2.0 * f));"
+          ]
+        }
+      ],
+      "links": [
+        ["@get", "Particles.RibbonLinkOrder", "hlsl", "U"],
+        ["@get", "Particles.Age", "hlsl", "Age"],
+        ["@get", "Module.LandingX", "hlsl", "LandingX"],
+        ["@get", "Module.LandingY", "hlsl", "LandingY"],
+        ["@get", "Module.Lean", "hlsl", "Lean"],
+        ["@get", "Module.Length", "hlsl", "Length"],
+        ["hlsl", "Position", "@set", "Particles.Position"],
+        ["hlsl", "Width", "@set", "Particles.RibbonWidth"]
+      ]
+    }
+  ],
+
+  "system": {
+    "path": "/Game/TestSample/NS_ChainStrike",
+    "rebuild": true,
+    "emitter_defaults": {
+      "template": "",
+      "properties": { "bLocalSpace": "true" },
+      "add_modules": [
+        { "stack": "EmitterUpdate", "script": "/Niagara/Modules/Beams/BeamEmitterSetup.BeamEmitterSetup" },
+        { "stack": "EmitterUpdate", "script": "/Niagara/Modules/Emitter/SpawnBurst_Instantaneous.SpawnBurst_Instantaneous" },
+        { "stack": "ParticleSpawn", "script": "/Niagara/Modules/Beams/SpawnBeam.SpawnBeam" },
+        { "stack": "ParticleUpdate", "script": "/Game/TestSample/NM_ChainStrikeMotion.NM_ChainStrikeMotion" }
+      ],
+      "inputs": [
+        { "module": "Emitter State", "input": "Loop Duration", "value": "2.1" },
+        { "module": "Beam Emitter Setup", "input": "Beam End", "value": "200, 0, 0" },
+        { "module": "Spawn Burst Instantaneous", "input": "Spawn Count", "value": "40" },
+        { "module": "Initialize Particle", "input": "Lifetime Mode", "value": "Direct Set" },
+        { "module": "Initialize Particle", "input": "Lifetime", "value": "1.35" }
+      ],
+      "notes": [
+        { "module": "NM_ChainStrikeMotion", "header": "AI generated",
+          "message": "Falls for 0.34 s, shakes on impact, retracts after 0.91 s. Tune landing with LandingX/LandingY, tilt with Lean, size with Length." }
+      ],
+      "remove_renderers": [0],
+      "renderers": [
+        { "type": "Ribbon", "material": "/Game/TestSample/M_ChainRibbon.M_ChainRibbon" }
+      ]
+    },
+    "emitters": [
+      { "name": "ChainLeft",
+        "inputs": [
+          { "module": "Spawn Burst Instantaneous", "input": "Spawn Time", "value": "0.02" },
+          { "module": "NM_ChainStrikeMotion", "input": "LandingX", "value": "-70" },
+          { "module": "NM_ChainStrikeMotion", "input": "LandingY", "value": "20" },
+          { "module": "NM_ChainStrikeMotion", "input": "Lean", "value": "-30" },
+          { "module": "NM_ChainStrikeMotion", "input": "Length", "value": "330" }
+        ] },
+      { "name": "Chain",
+        "inputs": [
+          { "module": "Spawn Burst Instantaneous", "input": "Spawn Time", "value": "0.32" },
+          { "module": "NM_ChainStrikeMotion", "input": "LandingX", "value": "6" },
+          { "module": "NM_ChainStrikeMotion", "input": "LandingY", "value": "-8" },
+          { "module": "NM_ChainStrikeMotion", "input": "Lean", "value": "-42" },
+          { "module": "NM_ChainStrikeMotion", "input": "Length", "value": "355" }
+        ] },
+      { "name": "ChainRight",
+        "inputs": [
+          { "module": "Spawn Burst Instantaneous", "input": "Spawn Time", "value": "0.62" },
+          { "module": "NM_ChainStrikeMotion", "input": "LandingX", "value": "75" },
+          { "module": "NM_ChainStrikeMotion", "input": "LandingY", "value": "-25" },
+          { "module": "NM_ChainStrikeMotion", "input": "Lean", "value": "-55" },
+          { "module": "NM_ChainStrikeMotion", "input": "Length", "value": "340" }
+        ] }
+    ]
+  }
+}

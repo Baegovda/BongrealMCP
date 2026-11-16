@@ -1,0 +1,115 @@
+{
+  "path": "/Game/TestSample/M_MimicEye",
+  "properties": {
+    "MaterialDomain": "Surface",
+    "BlendMode": "Opaque",
+    "ShadingModel": "Unlit",
+    "TwoSided": "true"
+  },
+  "expressions": [
+    { "id": "Time", "class": "Time", "pos": [-1500, -300] },
+    { "id": "UV", "class": "TextureCoordinate", "pos": [-1500, 400] },
+    { "id": "TimeOffset", "class": "ScalarParameter", "pos": [-1500, -200], "properties": { "ParameterName": "Time Offset", "DefaultValue": "0", "Group": "Timing" } },
+    { "id": "Rate", "class": "ScalarParameter", "pos": [-1500, -100], "properties": { "ParameterName": "Gaze Changes Per Second", "DefaultValue": "2.3", "Group": "Gaze" } },
+    { "id": "Travel", "class": "ScalarParameter", "pos": [-1500, 0], "properties": { "ParameterName": "Gaze Travel", "DefaultValue": "0.11", "Group": "Gaze" } },
+    { "id": "Window", "class": "ScalarParameter", "pos": [-1500, 100], "properties": { "ParameterName": "Blink Window Seconds", "DefaultValue": "3.1", "Group": "Blink" } },
+    { "id": "Duration", "class": "ScalarParameter", "pos": [-1500, 200], "properties": { "ParameterName": "Blink Duration Seconds", "DefaultValue": "0.22", "Group": "Blink" } },
+    { "id": "BlinkNoise", "class": "TextureObjectParameter", "pos": [-1500, 500], "properties": { "ParameterName": "Blink Noise", "Texture": "/Game/Tex/T_Noise_100.T_Noise_100", "Group": "Textures" } },
+    { "id": "PupilArrow", "class": "TextureObjectParameter", "pos": [-1500, 700], "properties": { "ParameterName": "Pupil Arrow", "Texture": "/Game/Tex/T_Test_Arrow_001.T_Test_Arrow_001", "Group": "Textures" } },
+    { "id": "Background", "class": "VectorParameter", "pos": [-1100, 500], "properties": { "ParameterName": "Background Color", "DefaultValue": "0.014, 0.008, 0.006, 1", "Group": "Colors" } },
+    { "id": "Lid", "class": "VectorParameter", "pos": [-1100, 650], "properties": { "ParameterName": "Lid Color", "DefaultValue": "0.085, 0.025, 0.013, 1", "Group": "Colors" } },
+    { "id": "Iris", "class": "VectorParameter", "pos": [-1100, 800], "properties": { "ParameterName": "Eye Color", "DefaultValue": "1, 0.32, 0.035, 1", "Group": "Colors" } },
+    { "id": "Pupil", "class": "VectorParameter", "pos": [-1100, 950], "properties": { "ParameterName": "Pupil Color", "DefaultValue": "0.018, 0.004, 0.003, 1", "Group": "Colors" } },
+    { "id": "Gaze", "class": "Custom", "pos": [-1000, -150],
+      "custom": {
+        "description": "Random four-way gaze",
+        "inputs": ["Seconds", "Offset", "Rate", "Travel"],
+        "output": "Float2",
+        "code": [
+          "float t = max(0.0, Seconds + Offset) * max(0.01, Rate);",
+          "float cell = floor(t);",
+          "float slot = frac(t);",
+          "float currentHash = frac(sin((cell + 23.0) * 78.233) * 43758.5453);",
+          "float previousHash = frac(sin((cell + 22.0) * 78.233) * 43758.5453);",
+          "float currentDir = floor(currentHash * 4.0);",
+          "float previousDir = floor(previousHash * 4.0);",
+          "float2 current = currentDir < 2.0 ? float2(1.0 - 2.0 * currentDir, 0.0) : float2(0.0, 5.0 - 2.0 * currentDir);",
+          "float2 previous = previousDir < 2.0 ? float2(1.0 - 2.0 * previousDir, 0.0) : float2(0.0, 5.0 - 2.0 * previousDir);",
+          "float start = 0.12 + 0.62 * frac(sin((cell + 3.0) * 53.17) * 23421.63);",
+          "float shift = smoothstep(start, start + 0.075, slot);",
+          "float strength = clamp(Travel, 0.0, 0.16);",
+          "return lerp(previous, current, shift) * strength * float2(1.0, 0.62);"
+        ]
+      }
+    },
+    { "id": "Blink", "class": "Custom", "pos": [-1000, 150],
+      "custom": {
+        "description": "Noise-timed eyelid",
+        "inputs": ["Seconds", "Offset", "Noise", "Window", "Duration"],
+        "output": "Float1",
+        "code": [
+          "float t = max(0.0, Seconds + Offset);",
+          "float w = max(Window, 0.2);",
+          "float cell = floor(t / w);",
+          "float n = Texture2DSample(Noise, NoiseSampler, float2(frac(cell * 0.137 + 0.11), frac(cell * 0.291 + 0.37))).r;",
+          "float d = clamp(Duration, 0.02, w * 0.5);",
+          "float start = (0.1 + 0.75 * n) * (w - d);",
+          "float x = (t - cell * w - start) / d;",
+          "return (x >= 0.0 && x <= 1.0) ? sin(x * 3.141593) : 0.0;"
+        ]
+      }
+    },
+    { "id": "Eye", "class": "Custom", "pos": [-500, 300],
+      "custom": {
+        "description": "Mimic eye on UV0",
+        "inputs": ["UV", "Gaze", "Blink", "Arrow", "Noise", "Background", "Lid", "Iris", "Pupil"],
+        "output": "Float3",
+        "code": [
+          "float2 p = UV - 0.5;",
+          "float width = saturate(1.0 - pow(abs(p.x) / 0.43, 2.0));",
+          "float contour = pow(width, 0.80);",
+          "float frameSDF = max(abs(p.x) - 0.43, abs(p.y) - 0.26 * contour);",
+          "float aa = max(fwidth(frameSDF), 0.0007);",
+          "float frame = 1.0 - smoothstep(-aa, aa, frameSDF);",
+          "float2 pupilUV = (p - Gaze) / float2(0.32, 0.36) + 0.5;",
+          "float arrowMask = Texture2DSample(Arrow, ArrowSampler, saturate(pupilUV)).r;",
+          "arrowMask *= step(0.0, min(pupilUV.x, pupilUV.y)) * step(max(pupilUV.x, pupilUV.y), 1.0);",
+          "float noiseEdge = pow(Texture2DSample(Noise, NoiseSampler, UV * 0.24 + 0.19).r, 0.455);",
+          "float eyelidHeight = 0.229 * contour * (1.0 - Blink);",
+          "eyelidHeight += (noiseEdge - 0.5) * 0.030 * contour * sin(Blink * 3.141593);",
+          "float apertureSDF = max(abs(p.x) - 0.403, abs(p.y) - eyelidHeight);",
+          "float openEye = (1.0 - smoothstep(-aa, aa, apertureSDF)) * (1.0 - smoothstep(0.92, 1.0, Blink));",
+          "float irisFalloff = saturate(1.0 - length((p - Gaze * 0.24) * float2(1.9, 3.6)));",
+          "float3 eye = lerp(Iris * 0.30, Iris, irisFalloff);",
+          "eye = lerp(eye, Pupil, saturate(arrowMask));",
+          "float seam = (1.0 - smoothstep(0.002, 0.006 + aa, abs(p.y))) * contour;",
+          "float3 lid = Lid * (0.72 + 0.28 * irisFalloff) + Iris * seam * Blink * 0.17;",
+          "return lerp(Background, lerp(lid, eye, openEye), frame);"
+        ]
+      }
+    }
+  ],
+  "links": [
+    ["Time", "", "Gaze", "Seconds"],
+    ["TimeOffset", "", "Gaze", "Offset"],
+    ["Rate", "", "Gaze", "Rate"],
+    ["Travel", "", "Gaze", "Travel"],
+    ["Time", "", "Blink", "Seconds"],
+    ["TimeOffset", "", "Blink", "Offset"],
+    ["BlinkNoise", "", "Blink", "Noise"],
+    ["Window", "", "Blink", "Window"],
+    ["Duration", "", "Blink", "Duration"],
+    ["UV", "", "Eye", "UV"],
+    ["Gaze", "", "Eye", "Gaze"],
+    ["Blink", "", "Eye", "Blink"],
+    ["PupilArrow", "", "Eye", "Arrow"],
+    ["BlinkNoise", "", "Eye", "Noise"],
+    ["Background", "", "Eye", "Background"],
+    ["Lid", "", "Eye", "Lid"],
+    ["Iris", "", "Eye", "Iris"],
+    ["Pupil", "", "Eye", "Pupil"]
+  ],
+  "outputs": [
+    ["Eye", "", "EmissiveColor"]
+  ]
+}
