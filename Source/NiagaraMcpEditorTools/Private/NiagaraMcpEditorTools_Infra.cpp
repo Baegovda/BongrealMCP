@@ -110,7 +110,7 @@ TArray<FNiagaraMcpRestorePointInfo> UNiagaraMcpEditorTools::ListRestorePoints()
 	return Result;
 }
 
-FNiagaraMcpRollbackResult UNiagaraMcpEditorTools::RollbackToRestorePoint(FName Name, bool bAllowUserChanges)
+FNiagaraMcpRollbackResult UNiagaraMcpEditorTools::RollbackToRestorePoint(FName Name, bool bAllowUserChanges, bool bSave)
 {
 	FNiagaraMcpRollbackResult Result;
 	Result.Name = Name;
@@ -181,6 +181,10 @@ FNiagaraMcpRollbackResult UNiagaraMcpEditorTools::RollbackToRestorePoint(FName N
 	}
 	NiagaraMcpTools::RefreshSystemsAfterTransaction(Touched);
 	Result.bRolledBack = Journal::GetTopTransactionId() == Point->TopTransaction || (!Point->TopTransaction.IsValid() && Journal::GetUndoableCount() == 0);
+	if (bSave)
+	{
+		NiagaraMcpTools::SaveTouchedPackages(Touched, Result.SavedPackages, Result.UnsavedPackages);
+	}
 	return Result;
 }
 

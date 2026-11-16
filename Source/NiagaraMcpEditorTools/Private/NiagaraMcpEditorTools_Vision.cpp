@@ -872,6 +872,7 @@ FNiagaraMcpBakeResult UNiagaraMcpEditorTools::BakeFlipbook(UNiagaraSystem* Syste
 	TArray<FColor> Atlas;
 	Atlas.Init(FColor(0, 0, 0, bBlack ? 0 : 255), Width * Height);
 	FNiagaraMcpBakeResult Result;
+	const int32 NoiseFloor = ThresholdFor(Shots, 0);
 	for (int32 Index = 0; Index < Shots.Shots.Num(); ++Index)
 	{
 		const FShot& Shot = Shots.Shots[Index];
@@ -886,7 +887,17 @@ FNiagaraMcpBakeResult UNiagaraMcpEditorTools::BakeFlipbook(UNiagaraSystem* Syste
 			for (int32 X = 0; X < FrameSize; ++X)
 			{
 				FColor Pixel = Shot.Pixels[Y * FrameSize + X];
-				Pixel.A = bBlack ? FMath::Max3(Pixel.R, Pixel.G, Pixel.B) : 255;
+				if (bBlack)
+				{
+					// The tonemapper dithers black by one quantization step, which would turn the empty background into a 5 %
+					// alpha haze: anything at or below the measured noise floor is fully transparent.
+					const uint8 Brightness = FMath::Max3(Pixel.R, Pixel.G, Pixel.B);
+					Pixel = Brightness <= NoiseFloor ? FColor(0, 0, 0, 0) : FColor(Pixel.R, Pixel.G, Pixel.B, Brightness);
+				}
+				else
+				{
+					Pixel.A = 255;
+				}
 				Atlas[(OffsetY + Y) * Width + OffsetX + X] = Pixel;
 			}
 		}
@@ -916,7 +927,7 @@ FNiagaraMcpBakeResult UNiagaraMcpEditorTools::BakeFlipbook(UNiagaraSystem* Syste
 	Result.Rows = Rows;
 	Result.FrameSize = FrameSize;
 	Result.AlphaMode = bBlack
-		? FString(TEXT("Brightness: A = brightest of R, G, B over black (black is transparent; RGB is premultiplied - use additive or premultiplied alpha blending)"))
+		? FString::Printf(TEXT("Brightness: A = brightest of R, G, B over black (black and the render noise floor, <= %d / 255, are transparent; RGB is premultiplied - use additive or premultiplied alpha blending)"), NoiseFloor)
 		: FString::Printf(TEXT("Opaque (rendered over %s)"), *BackgroundName);
 	Result.Usage = FString::Printf(TEXT("Sprite renderer: Material with this texture in a SubUV / flipbook sampler, SubImageSize = (%d, %d); animate Particles.SubImageIndex from 0 to %d (SubUV Animation module, e.g. Linear over the particle's life). Frame i shows simulation time %s + i * %s s."),
 		Columns, Rows, FrameCount - 1, *Fmt(StartTime, 3), *Fmt((EndTime - StartTime) / FrameCount, 4));

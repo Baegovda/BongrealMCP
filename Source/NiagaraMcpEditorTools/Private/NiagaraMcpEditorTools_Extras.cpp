@@ -5,6 +5,8 @@
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
 #include "Misc/ITransaction.h"
+#include "Misc/PackageName.h"
+#include "UObject/Package.h"
 #include "Engine/World.h"
 #include "NiagaraActor.h"
 #include "NiagaraComponent.h"
@@ -434,7 +436,48 @@ void NiagaraMcpTools::RefreshSystemsAfterTransaction(const TArray<UObject*>& Obj
 	}
 }
 
-FNiagaraMcpUndoResult UNiagaraMcpEditorTools::Undo(int32 Count)
+void NiagaraMcpTools::SaveTouchedPackages(const TArray<UObject*>& Objects, TArray<FString>& OutSaved, TArray<FString>& OutUnsaved)
+{
+	// Undo/Redo only change the objects in memory: without this the files keep the undone state and the editor shows
+	// the asset as modified (the next editor restart would bring the undone edit back).
+	TSet<UPackage*> Packages;
+	for (UObject* Object : Objects)
+	{
+		UPackage* Package = IsValid(Object) ? Object->GetOutermost() : nullptr;
+		if (Package && Package != GetTransientPackage() && Package->IsDirty())
+		{
+			Packages.Add(Package);
+		}
+	}
+	const bool bPlaying = GEditor && GEditor->PlayWorld;
+	for (UPackage* Package : Packages)
+	{
+		const FString Name = Package->GetName();
+		if (!FPackageName::IsValidLongPackageName(Name) || Name.StartsWith(TEXT("/Temp/")) || Name.StartsWith(TEXT("/Script/")))
+		{
+			continue;
+		}
+		// Levels are the user's to save; never-saved assets were created unsaved on purpose (bSave = false).
+		UObject* Asset = Package->FindAssetInPackage();
+		if (bPlaying || Package->ContainsMap() || Asset == nullptr || !FPackageName::DoesPackageExist(Name))
+		{
+			OutUnsaved.Add(Name);
+			continue;
+		}
+		if (SaveAssetSilently(Asset))
+		{
+			OutSaved.Add(Name);
+		}
+		else
+		{
+			OutUnsaved.Add(Name);
+		}
+	}
+	OutSaved.Sort();
+	OutUnsaved.Sort();
+}
+
+FNiagaraMcpUndoResult UNiagaraMcpEditorTools::Undo(int32 Count, bool bSave)
 {
 	Journal::FAgentSaveScope AgentScope; // undo/redo issued by the agent, not the editor's Ctrl+Z
 	FNiagaraMcpUndoResult Result;
@@ -457,10 +500,14 @@ FNiagaraMcpUndoResult UNiagaraMcpEditorTools::Undo(int32 Count)
 		return Result;
 	}
 	NiagaraMcpTools::RefreshSystemsAfterTransaction(Touched);
+	if (bSave)
+	{
+		NiagaraMcpTools::SaveTouchedPackages(Touched, Result.SavedPackages, Result.UnsavedPackages);
+	}
 	return Result;
 }
 
-FNiagaraMcpUndoResult UNiagaraMcpEditorTools::Redo(int32 Count)
+FNiagaraMcpUndoResult UNiagaraMcpEditorTools::Redo(int32 Count, bool bSave)
 {
 	Journal::FAgentSaveScope AgentScope; // undo/redo issued by the agent, not the editor's Ctrl+Z
 	FNiagaraMcpUndoResult Result;
@@ -483,6 +530,10 @@ FNiagaraMcpUndoResult UNiagaraMcpEditorTools::Redo(int32 Count)
 		return Result;
 	}
 	NiagaraMcpTools::RefreshSystemsAfterTransaction(Touched);
+	if (bSave)
+	{
+		NiagaraMcpTools::SaveTouchedPackages(Touched, Result.SavedPackages, Result.UnsavedPackages);
+	}
 	return Result;
 }
 

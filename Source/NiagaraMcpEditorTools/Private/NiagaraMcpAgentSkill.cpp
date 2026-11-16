@@ -133,7 +133,8 @@ MaxExpressions) and FindAssets page or filter; follow NextOffset instead of aski
 - Materials used by Niagara need the matching usage flag (bUsedWithNiagaraSprites / Ribbons / MeshParticles).
 - Custom HLSL: assign every output; texture objects are sampled with Texture2DSample(Tex, TexSampler, UV).
 - After graph edits always ApplyScriptChanges, then CompileSystem / ValidateSystem.
-- Asset creation is not undoable (like the editor); Undo reverts edits only.
+- Asset creation is not undoable (like the editor); Undo reverts edits only. Undo/Redo/RollbackToRestorePoint save the
+  touched assets afterwards (bSave) so the files match; levels are never saved for you (see UnsavedPackages).
 - ReadOutputLog (Categories LogNiagara, LogShaderCompilers, LogMaterial) shows details behind compile failures.
 )SKILL");
 }

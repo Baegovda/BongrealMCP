@@ -286,4 +286,56 @@ bool FNiagaraMcpInfraReviewFixesTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FNiagaraMcpInfraUndoSavesTest, "NiagaraMcp.Infra.UndoAndRollbackSave",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FNiagaraMcpInfraUndoSavesTest::RunTest(const FString& Parameters)
+{
+	using namespace NiagaraMcpInfraTests;
+	// A saved asset: Undo / Redo / rollback must leave the file matching what the editor shows.
+	const FString Path = Folder(TEXT("UndoSave")) / TEXT("NS_UndoSave");
+	UNiagaraSystem* System = LoadObject<UNiagaraSystem>(nullptr, *UNiagaraMcpEditorTools::CreateSystem(Path, true).Path);
+	if (!TestNotNull(TEXT("System"), System))
+	{
+		return false;
+	}
+	UNiagaraMcpEditorTools::AddEmitter(System, TEXT("A"), TEXT("Minimal"), true);
+	UNiagaraMcpEditorTools::AddModule(System, TEXT("A"), TEXT("EmitterUpdate"), TEXT("/Niagara/Modules/Emitter/SpawnBurst_Instantaneous.SpawnBurst_Instantaneous"), -1, true);
+	UNiagaraMcpEditorTools::SetModuleInput(System, TEXT("A"), TEXT("Spawn Burst Instantaneous"), TEXT("Spawn Count"), TEXT("10"), TEXT("Any"), true);
+	UPackage* Package = System->GetOutermost();
+	const FString PackageName = Package->GetName();
+	TestFalse(TEXT("Saved after setup"), Package->IsDirty());
+
+	UNiagaraMcpEditorTools::CreateRestorePoint(TEXT("rp_save"));
+	UNiagaraMcpEditorTools::SetModuleInput(System, TEXT("A"), TEXT("Spawn Burst Instantaneous"), TEXT("Spawn Count"), TEXT("30"), TEXT("Any"), true);
+	const FNiagaraMcpRollbackResult Rolled = UNiagaraMcpEditorTools::RollbackToRestorePoint(TEXT("rp_save"));
+	AddInfo(FString::Printf(TEXT("rollback saved=[%s] unsaved=[%s]"), *FString::Join(Rolled.SavedPackages, TEXT(",")), *FString::Join(Rolled.UnsavedPackages, TEXT(","))));
+	TestTrue(TEXT("Rolled back"), Rolled.bRolledBack);
+	TestEqual(TEXT("Rollback restored the value"), BurstCount(System), 10);
+	TestTrue(TEXT("Rollback saved the package"), Rolled.SavedPackages.Contains(PackageName));
+	TestFalse(TEXT("Not dirty after rollback"), Package->IsDirty());
+
+	UNiagaraMcpEditorTools::SetModuleInput(System, TEXT("A"), TEXT("Spawn Burst Instantaneous"), TEXT("Spawn Count"), TEXT("40"), TEXT("Any"), true);
+	const FNiagaraMcpUndoResult Undone = UNiagaraMcpEditorTools::Undo(1);
+	TestEqual(TEXT("Undo restored the value"), BurstCount(System), 10);
+	TestTrue(TEXT("Undo saved the package"), Undone.SavedPackages.Contains(PackageName));
+	TestFalse(TEXT("Not dirty after undo"), Package->IsDirty());
+
+	const FNiagaraMcpUndoResult Redone = UNiagaraMcpEditorTools::Redo(1, false);
+	TestEqual(TEXT("Redo reapplied the value"), BurstCount(System), 40);
+	TestTrue(TEXT("Redo with bSave=false saves nothing"), Redone.SavedPackages.Num() == 0 && Package->IsDirty());
+	const FNiagaraMcpUndoResult Undone2 = UNiagaraMcpEditorTools::Undo(1);
+	TestFalse(TEXT("Clean again"), Package->IsDirty());
+
+	// Never-saved assets stay unsaved (their bSave=false was deliberate) and are reported.
+	UNiagaraSystem* Unsaved = MakeBurstSystem(Folder(TEXT("UndoSave")) / TEXT("NS_NeverSaved"));
+	if (TestNotNull(TEXT("Unsaved system"), Unsaved))
+	{
+		UNiagaraMcpEditorTools::SetModuleInput(Unsaved, TEXT("A"), TEXT("Spawn Burst Instantaneous"), TEXT("Spawn Count"), TEXT("25"), TEXT("Any"), false);
+		const FNiagaraMcpUndoResult UndoneUnsaved = UNiagaraMcpEditorTools::Undo(1);
+		TestTrue(TEXT("Never-saved asset reported as unsaved"), UndoneUnsaved.SavedPackages.Num() == 0 && UndoneUnsaved.UnsavedPackages.Contains(Unsaved->GetOutermost()->GetName()));
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

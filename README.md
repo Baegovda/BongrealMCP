@@ -27,6 +27,13 @@ Unreal MCP는 툴셋 결과를 모두 텍스트로 감쌉니다. 그래서 `call
 모든 편집은 **Undo 트랜잭션** 안에서 실행되므로 Ctrl+Z로 되돌릴 수 있습니다.
 스택 편집은 나이아가라 에디터 UI와 같은 스택 뷰모델을 거칩니다. 그래서 시스템을 나이아가라 에디터에 열어 둔 상태에서도 동작합니다.
 
+## 0.5.1 수정 사항
+
+- `Undo` / `Redo` / `RollbackToRestorePoint` 후 건드린 에셋을 바로 저장합니다(`bSave`, 기본 켜짐). 레벨·한 번도 저장 안 된 에셋·PIE 중에는 저장하지 않고 `UnsavedPackages` 로 알려줍니다.
+- `BakeFlipbook`(Black): 톤매퍼 디더 노이즈가 배경에 옅은 알파 얼룩으로 남던 문제 수정.
+- `niagara_cost_view` / `CaptureCostView`: 셰이더 캐시가 비어 있을 때 첫 호출이 빈 화면이던 문제 수정.
+- 자동화 테스트 32개 모두 Success.
+
 ## 0.5.0 새 기능 요약
 
 GitHub의 유사 MCP(나이아가라 특화 12개, 범용 언리얼 MCP, 블렌더·후디니·유니티 MCP)를 다시 조사해 고른 기능입니다.
@@ -269,7 +276,7 @@ python Tools/material_rebuild.py Tools/examples/mimic_eye.json
 ## 검증 결과 (UE 5.8.4)
 
 - **빌드**: 실제 5.8 Toolset Registry / Unreal MCP API로 빌드했습니다. 오류와 경고 모두 0입니다.
-- **C++ 자동화 테스트**: 0.5.0에서 31개 모두 Success입니다(Assets, Core, EndToEnd, Material, NiagaraExt, Vision, Analysis, Infra).
+- **C++ 자동화 테스트**: 0.5.0 출시 때 31개 모두 Success였고(Assets, Core, EndToEnd, Material, NiagaraExt, Vision, Analysis, Infra), 이후 `Infra.UndoAndRollbackSave` 를 추가한 32개도 모두 Success입니다.
 - **라이브 MCP**:
   - 플러그인 자동 시작 설정만으로 MCP 서버가 떴고, `tools/list` 결과는 `list_toolsets / describe_toolset / call_tool` 이었습니다.
   - 이어서 `Tests/smoke_test.py` 가 HTTP MCP로 M_ChainRibbon, NM_ChainStrikeMotion, NS_ChainStrike를 만들었습니다.
@@ -296,6 +303,9 @@ python Tools/material_rebuild.py Tools/examples/mimic_eye.json
 - **실패해도 일부만 바뀌던 문제**: SetModuleInput, SetCustomExpression, 머티리얼 인스턴스 파라미터, CreateLocalModule이 모두 검증을 먼저 하고 바꿉니다.
 - **에셋 생성과 Undo**: 생성을 Undo하면 빈 에셋이 남아 크래시하던 문제 → 에디터처럼 생성은 Undo 대상에서 뺐습니다.
 - **Undo 후 미리보기가 옛 상태**: Undo/Redo 후 해당 시스템을 다시 컴파일합니다.
+- **Undo·되돌리기 후 파일이 옛 상태**: `Undo` / `Redo` / `RollbackToRestorePoint` 가 메모리만 되돌리고 저장하지 않아, 디스크 파일에는 되돌리기 전 값이 남아 있었습니다. 이제 건드린 에셋을 바로 저장합니다(`bSave`, 기본 켜짐). 레벨, 한 번도 저장 안 된 에셋, PIE 중에는 저장하지 않고 `UnsavedPackages` 로 알려줍니다. 회귀 테스트 `NiagaraMcp.Infra.UndoAndRollbackSave`.
+- **BakeFlipbook 배경 알파 얼룩**: 톤매퍼가 검은색을 1단계(sRGB 13/255) 디더링해서, 밝기→알파로 구울 때 빈 배경에 5% 알파 얼룩이 생겼습니다. 측정한 노이즈 이하 픽셀은 완전 투명으로 처리합니다(`AlphaMode` 에 기준값 표시).
+- **비용 보기(ShaderComplexity) 첫 호출이 빈 화면**: 셰이더 캐시가 비어 있으면 디버그 뷰 셰이더가 첫 프레임 뒤에야 컴파일 요청돼 파티클이 안 그려졌습니다. 비용 보기에서는 워밍업을 3번 돌리며 셰이더를 기다립니다.
 - **ApplyScriptChanges**: 엔진의 Apply와 같게(트랜잭션, 열린 에디터 사본 포함, ScriptApplied 알림, 이미터·스크립트 호출자도 저장).
 - **읽기 도구의 부작용**: ValidateSystem/ValidateMaterial은 `bCompile=false` 면 아무것도 바꾸지 않습니다.
 - **값 왕복**: GetStack 값과 커브 보간이 Set 도구에 그대로 들어갑니다. 스택 이름 별칭(ParticleSimulationStageScript, EventHandler 등)을 통일했습니다.

@@ -615,6 +615,14 @@ struct FNiagaraMcpUndoResult
 	/** Titles of the transactions that were undone or redone, most recent first. */
 	UPROPERTY()
 	TArray<FString> Transactions;
+
+	/** Packages written to disk after the undo/redo (bSave), so the files match what the editor shows. */
+	UPROPERTY()
+	TArray<FString> SavedPackages;
+
+	/** Touched packages left unsaved: levels, never-saved assets, Play In Editor running, or a failed save. */
+	UPROPERTY()
+	TArray<FString> UnsavedPackages;
 };
 
 /** One operation of ExecuteBatch. */
@@ -1257,6 +1265,14 @@ struct FNiagaraMcpRollbackResult
 	/** Editor (user) edits made after the restore point. */
 	UPROPERTY()
 	TArray<FString> UserChanges;
+
+	/** Packages written to disk after the rollback (bSave), so the files match the restored state. */
+	UPROPERTY()
+	TArray<FString> SavedPackages;
+
+	/** Touched packages left unsaved: levels, never-saved assets, Play In Editor running, or a failed save. */
+	UPROPERTY()
+	TArray<FString> UnsavedPackages;
 };
 
 /** An engine Niagara template (emitter or system). */
@@ -2649,19 +2665,21 @@ public:
 	 * Undoes the most recent editor transactions (every write tool of this plugin is one transaction).
 	 *
 	 * @param Count Number of transactions to undo
-	 * @return Titles of the undone transactions
+	 * @param bSave Save the touched assets afterwards so the files on disk match (levels are never saved here)
+	 * @return Titles of the undone transactions and what was saved
 	 */
 	UFUNCTION(meta = (AICallable, AIAccessMode = "Write"), Category = "Editor")
-	static FNiagaraMcpUndoResult Undo(int32 Count = 1);
+	static FNiagaraMcpUndoResult Undo(int32 Count = 1, bool bSave = true);
 
 	/**
 	 * Redoes transactions undone with Undo.
 	 *
 	 * @param Count Number of transactions to redo
-	 * @return Titles of the redone transactions
+	 * @param bSave Save the touched assets afterwards so the files on disk match (levels are never saved here)
+	 * @return Titles of the redone transactions and what was saved
 	 */
 	UFUNCTION(meta = (AICallable, AIAccessMode = "Write"), Category = "Editor")
-	static FNiagaraMcpUndoResult Redo(int32 Count = 1);
+	static FNiagaraMcpUndoResult Redo(int32 Count = 1, bool bSave = true);
 
 	/**
 	 * Runs several tool calls in one request, in order: build or edit a whole effect or material graph without a
@@ -3180,10 +3198,11 @@ public:
 	 *
 	 * @param Name Restore point name
 	 * @param bAllowUserChanges Also undo edits the user made in the editor after the point
-	 * @return What was undone
+	 * @param bSave Save the touched assets afterwards so the files on disk match the restored state (levels are never saved here)
+	 * @return What was undone and what was saved
 	 */
 	UFUNCTION(meta = (AICallable, AIAccessMode = "Write"), Category = "Editor")
-	static FNiagaraMcpRollbackResult RollbackToRestorePoint(FName Name, bool bAllowUserChanges = false);
+	static FNiagaraMcpRollbackResult RollbackToRestorePoint(FName Name, bool bAllowUserChanges = false, bool bSave = true);
 
 	/**
 	 * Renders the editor thumbnails of up to 16 assets into one image (4 per row, in the given order) so you can pick

@@ -418,13 +418,19 @@ namespace NiagaraMcp::Preview
 			SimulateInOrder(*Component, First, TickDelta, [](int32, float) {});
 		}
 		Component->MarkRenderDynamicDataDirty();
+		// Debug view (cost view) shaders are only requested once a frame has drawn with them, and their compile jobs reach
+		// the shader compiling manager after the render thread processed that frame: without extra rounds a cold shader
+		// cache gives an empty first cost view (no particles drawn at all).
+		const int32 WarmUpRounds = Request.CostView != ECostView::None ? 3 : 1;
+		for (int32 Round = 0; Round < WarmUpRounds; ++Round)
 		{
 			TArray<FColor> WarmUp;
 			Shoot(0, WarmUp);
-		}
-		if (!WaitForShaderJobs(DefaultMaxWaitSeconds, OutError))
-		{
-			return false;
+			FlushRenderingCommands();
+			if (!WaitForShaderJobs(DefaultMaxWaitSeconds, OutError))
+			{
+				return false;
+			}
 		}
 		FlushRenderingCommands();
 

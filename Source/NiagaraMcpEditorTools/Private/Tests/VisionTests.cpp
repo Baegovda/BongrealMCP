@@ -420,6 +420,16 @@ bool FNiagaraMcpVisionCostBakeTest::RunTest(const FString& Parameters)
 			{
 				Opaque += Pixel.A > 0 ? 1 : 0;
 			}
+			{
+				// The tonemapper dithers black by one step (13 / 255 in sRGB); that noise must not become a faint alpha haze.
+				int32 Haze = 0;
+				for (const FColor& P : Bgra.AsBGRA8())
+				{
+					Haze += P.A > 0 && P.A <= 13 ? 1 : 0;
+				}
+				TestEqual(TEXT("No background noise haze in the alpha"), Haze, 0);
+				TestTrue(TEXT("Alpha mode names the noise floor"), Bake.AlphaMode.Contains(TEXT("noise floor")));
+			}
 			TestTrue(FString::Printf(TEXT("Alpha from brightness: transparent corner, %d drawn pixels"), Opaque), Bgra.AsBGRA8()[0].A == 0 && Opaque > 20);
 		}
 	}
