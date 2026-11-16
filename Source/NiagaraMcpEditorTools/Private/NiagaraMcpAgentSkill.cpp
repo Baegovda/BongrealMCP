@@ -127,6 +127,32 @@ MaxExpressions) and FindAssets page or filter; follow NextOffset instead of aski
   Procedural masks/noise: CreateRenderTarget2D -> DrawMaterialToRenderTarget -> CreateTextureFromRenderTarget.
   SubUV: CreateFlipbookTexture from frames, then SubImageSize on the sprite renderer.
 
+)SKILL") TEXT(R"SKILL(## Making it look right (lessons from real builds)
+- Start from a recipe, then tune with numbers and pictures. Recipes are already tuned; their description names the
+  material they assume. Tune in one ExecuteBatch with Expect after CreateRestorePoint, so a bad pass rolls back.
+- Additive materials with an emissive boost (about 6x) burn bright colors to white: keep particle colors around 0.3-0.8
+  (e.g. float4(0.8, 0.35, 0.06, 1)) and let the boost make the glow. A near-grey mean color in the preview caption
+  (R ~ G ~ B, e.g. 173, 172, 167) on an orange or blue effect means it is burnt out.
+- Previews: set CameraDistance yourself. Auto framing follows the system bounds (falling sparks, smoke columns) and can
+  make the effect tiny; coverage under ~2% means too small. Shoot the moments that matter (impacts: 0.02-0.4 s).
+- Smoke: translucent material with a smoke texture (opacity = texture x particle alpha) instead of a plain radial
+  mask; dark colors (0.03-0.12) with alpha up to ~0.9; grow over life; preview on Grey (dark smoke vanishes on black).
+- Scale Sprite Size starts in "Uniform Curve" mode, whose default curve shrinks particles: set Scale Sprite Size Mode
+  to "Uniform" (then Uniform Scale Factor) or "Non-Uniform" (then Scale Factor) before giving it an expression.
+- Streaks: renderer Alignment VelocityAligned + Sprite Size Mode "Random Non-Uniform" with Sprite Size Min / Max
+  "(X=3,Y=24)" / "(X=6,Y=55)" (X = width, Y = length along the velocity). Vector values use Unreal text syntax.
+- Forces (Gravity, Curl Noise, Drag) must sit above Solve Forces and Velocity. AddModule appends at the end, so add
+  them before the solver or pass TargetIndex; ValidateSystem reports the unmet dependency.
+- Random spin: Sprite Rotation Mode Random + Sprite Rotation Rate "Rotation Rate" =
+  Dynamic:/Niagara/DynamicInputs/UniformRange/UniformRangedFloat.UniformRangedFloat, then "Rotation Rate/Minimum" and
+  "Rotation Rate/Maximum" (e.g. -120 / 120).
+- Material ParticleColor: its default output is RGB only; connect output "A" for alpha (a Custom node reading
+  Color.a from the default output does not compile).
+- Marketplace / Paragon textures often keep the shape in RGB with an opaque alpha (and legacy gamma); look at them
+  with texture_view Channels All and use the channel that holds the shape. Their thumbnails can render black.
+- When a tuning pass clearly improves a recipe-built effect, write the values back into Tools/recipes so the next
+  build starts there.
+
 )SKILL") TEXT(R"SKILL(## Pitfalls
 - Close the asset editor of a script, material or function before editing its graph (tools refuse otherwise).
 - GPU emitters need fixed bounds; light renderers only work on CPU emitters; GetParticleAttributes reads CPU, GPU and lightweight emitters (GPU via a sim cache).
