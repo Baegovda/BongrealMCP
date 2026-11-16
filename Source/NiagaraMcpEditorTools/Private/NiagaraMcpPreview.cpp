@@ -400,6 +400,9 @@ namespace NiagaraMcp::Preview
 			const float DistanceToBack = FVector::Dist(BackLocation, CameraLocations[YawIndex]);
 			const float Width = 2.0f * FMath::Tan(FMath::DegreesToRadians(Camera.FieldOfView * 0.5f)) * DistanceToBack * 1.3f;
 			Backdrop->SetWorldTransform(FTransform(FRotationMatrix::MakeFromZ(-Forward).Rotator(), BackLocation, FVector(Width / 100.0f)));
+			// The backdrop material is lit: aim the preview light along the view (tilted down a little) so every yaw sees
+			// the same backdrop brightness instead of a black plane when the camera faces away from the light.
+			Scene.SetLightDirection(CameraRotations[YawIndex] + FRotator(-20.0f, 0.0f, 0.0f));
 		};
 		auto Shoot = [&](int32 YawIndex, TArray<FColor>& OutPixels)
 		{

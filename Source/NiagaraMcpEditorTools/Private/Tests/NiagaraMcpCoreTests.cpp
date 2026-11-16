@@ -274,6 +274,30 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FNiagaraMcpCorePreviewTest, "NiagaraMcp.Core.Pr
 
 namespace NiagaraMcpCoreTests
 {
+	/** Pixel (X, Y) of a preview image (decoded PNG). */
+	bool PixelAt(const FToolsetImage& Image, int32 X, int32 Y, FColor& Out)
+	{
+		TArray<uint8> Bytes;
+		if (Image.Data.IsEmpty() || !FBase64::Decode(Image.Data, Bytes))
+		{
+			return false;
+		}
+		IImageWrapperModule& Module = FModuleManager::LoadModuleChecked<IImageWrapperModule>(TEXT("ImageWrapper"));
+		TSharedPtr<IImageWrapper> Wrapper = Module.CreateImageWrapper(EImageFormat::PNG);
+		TArray<uint8> Raw;
+		if (!Wrapper.IsValid() || !Wrapper->SetCompressed(Bytes.GetData(), Bytes.Num()) || !Wrapper->GetRaw(ERGBFormat::BGRA, 8, Raw))
+		{
+			return false;
+		}
+		const int64 Index = (static_cast<int64>(Y) * Wrapper->GetWidth() + X) * 4;
+		if (X >= Wrapper->GetWidth() || Y >= Wrapper->GetHeight() || Index + 3 >= Raw.Num())
+		{
+			return false;
+		}
+		Out = FColor(Raw[Index + 2], Raw[Index + 1], Raw[Index], Raw[Index + 3]);
+		return true;
+	}
+
 	/** Top-left pixel of a preview image (decoded PNG). */
 	bool CornerPixel(const FToolsetImage& Image, FColor& Out)
 	{
@@ -328,6 +352,11 @@ bool FNiagaraMcpCorePreviewTest::RunTest(const FString& Parameters)
 	const bool bDecoded = CornerPixel(Black, BlackCorner) && CornerPixel(Grey, GreyCorner);
 	TestTrue(FString::Printf(TEXT("Grey backdrop is visible and neutral (black corner %d,%d,%d / grey corner %d,%d,%d)"), BlackCorner.R, BlackCorner.G, BlackCorner.B, GreyCorner.R, GreyCorner.G, GreyCorner.B),
 		bDecoded && GreyCorner.R > BlackCorner.R + 25 && FMath::Abs(GreyCorner.R - GreyCorner.B) < 20);
+	// Every camera yaw gets the backdrop (it was black for yaws facing away from the light).
+	const FToolsetImage TwoYaws = UNiagaraMcpEditorTools::CapturePreview(System, { 0.5f }, 128, 0.0f, -15.0f, 400.0f, TEXT("Grey"), TEXT("0, 90")).Image;
+	FColor Left(0, 0, 0), Right(0, 0, 0);
+	const bool bTwo = PixelAt(TwoYaws, 2, 2, Left) && PixelAt(TwoYaws, 128 + 2, 2, Right);
+	TestTrue(FString::Printf(TEXT("Grey backdrop on both yaws (%d / %d)"), Left.R, Right.R), bTwo && Left.R > 25 && Right.R > 25 && FMath::Abs(Left.R - Right.R) < 40);
 	AddExpectedError(TEXT("Unknown Background"), EAutomationExpectedErrorFlags::Contains, 0);
 	TestTrue(TEXT("Unknown background is rejected"), UNiagaraMcpEditorTools::CapturePreview(System, { 0.5f }, 128, 0.0f, -15.0f, 0.0f, TEXT("Purple")).Image.Data.IsEmpty());
 	return true;
