@@ -1004,7 +1004,9 @@ FToolsetImage UAssetMcpEditorTools::ViewTexture(UTexture2D* Texture, const FStri
 		ReportError(FString::Printf(TEXT("Could not read the source image of '%s'."), *Texture->GetPathName()));
 		return {};
 	}
-	const EGammaSpace DisplayGamma = IsFloatFormat(Source.Format) ? EGammaSpace::sRGB : Source.GammaSpace;
+	// Pow22 (textures with legacy gamma) can be read but never written: ImageCore asserts on a Pow22 destination and
+	// takes the whole editor down, so show those as sRGB (visually the same curve).
+	const EGammaSpace DisplayGamma = IsFloatFormat(Source.Format) || Source.GammaSpace == EGammaSpace::Pow22 ? EGammaSpace::sRGB : Source.GammaSpace;
 	FImage Display;
 	Source.CopyTo(Display, ERawImageFormat::BGRA8, DisplayGamma);
 

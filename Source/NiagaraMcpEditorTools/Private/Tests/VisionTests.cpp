@@ -315,6 +315,18 @@ bool FNiagaraMcpVisionTextureTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Wide texture letterboxed (center red, top grey)"), Near(WideImage.At(32, 32), FColor(255, 255, 255), 1) && Near(WideImage.At(32, 2), FColor(30, 30, 30), 1));
 	}
 
+	// Legacy gamma (Pow22) source, as in many marketplace / Paragon textures: viewing it used to assert in ImageCore and
+	// close the editor without a crash report.
+	UTexture2D* Legacy = NewObject<UTexture2D>(GetTransientPackage(), NAME_None, RF_Transient);
+	Legacy->SRGB = true;
+	Legacy->bUseLegacyGamma = true;
+	Legacy->Source.Init(4, 4, 1, 1, TSF_BGRA8, reinterpret_cast<const uint8*>(Source.GetData()));
+	FDecoded LegacyImage;
+	if (TestTrue(TEXT("Legacy gamma texture view"), Decode(UAssetMcpEditorTools::ViewTexture(Legacy, TEXT("All"), 0, 0, 64), LegacyImage) && LegacyImage.Width == 192))
+	{
+		TestTrue(FString::Printf(TEXT("Legacy gamma color tile (%s)"), *ColorText(LegacyImage.At(16, 16))), Near(LegacyImage.At(16, 16), FColor(200, 100, 50), 4));
+	}
+
 	AddExpectedError(TEXT("Unknown Channels"), EAutomationExpectedErrorFlags::Contains, 1);
 	TestTrue(TEXT("Unknown channel rejected"), UAssetMcpEditorTools::ViewTexture(Texture, TEXT("Purple"), 0, 0, 64).Data.IsEmpty());
 	return true;

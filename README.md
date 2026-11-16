@@ -27,6 +27,11 @@ Unreal MCP는 툴셋 결과를 모두 텍스트로 감쌉니다. 그래서 `call
 모든 편집은 **Undo 트랜잭션** 안에서 실행되므로 Ctrl+Z로 되돌릴 수 있습니다.
 스택 편집은 나이아가라 에디터 UI와 같은 스택 뷰모델을 거칩니다. 그래서 시스템을 나이아가라 에디터에 열어 둔 상태에서도 동작합니다.
 
+## 0.5.2 수정 사항
+
+- **크래시 수정**: 레거시 감마(Pow22) 텍스처(Paragon·마켓플레이스 에셋에 흔함)를 `texture_view` / `ViewTexture` 로 보거나 `CreateFlipbookTexture` 의 첫 프레임으로 쓰면, 엔진 ImageCore assert로 에디터가 크래시 리포트 없이 종료되던 문제. 이런 텍스처는 sRGB로 변환해 표시·합성합니다.
+- 회귀 테스트: `Vision.ViewTexture`, `Assets.TexturesAndRenderTargets` 에 레거시 감마 케이스 추가. 32개 모두 Success.
+
 ## 0.5.1 수정 사항
 
 - `Undo` / `Redo` / `RollbackToRestorePoint` 후 건드린 에셋을 바로 저장합니다(`bSave`, 기본 켜짐). 레벨·한 번도 저장 안 된 에셋·PIE 중에는 저장하지 않고 `UnsavedPackages` 로 알려줍니다.

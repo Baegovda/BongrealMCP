@@ -156,6 +156,17 @@ bool FAssetMcpTexturesTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Flipbook keeps frame compression"), Flipbook.CompressionSettings, FString(TEXT("TC_Grayscale")));
 		AddExpectedMessagePlain(TEXT("Columns must be"), ELogVerbosity::Warning);
 		TestTrue(TEXT("Bad column count is rejected"), UAssetMcpEditorTools::CreateFlipbookTexture({ Texture }, 3, Folder + TEXT("/T_FlipbookBad"), false).Path.IsEmpty());
+
+		// A legacy gamma (Pow22) frame first: converting the other frames to Pow22 used to assert and close the editor.
+		// Built from the source pixels without PostEditChange, so no async texture build is running while it is set up.
+		FImage FrameImage;
+		Texture->Source.GetMipImage(FrameImage, 0, 0, 0);
+		UTexture2D* Legacy = NewObject<UTexture2D>(GetTransientPackage(), NAME_None, RF_Transient);
+		Legacy->SRGB = true;
+		Legacy->bUseLegacyGamma = true;
+		Legacy->Source.Init(FImageView(FrameImage, FrameImage.RawData.GetData()));
+		const FAssetMcpTextureInfo LegacyFlipbook = UAssetMcpEditorTools::CreateFlipbookTexture({ Legacy, Texture }, 2, Folder + TEXT("/T_FlipbookLegacy"), false);
+		TestTrue(TEXT("Flipbook from a legacy gamma frame"), !LegacyFlipbook.Path.IsEmpty() && LegacyFlipbook.SourceWidth == 128);
 	}
 
 	// ------------------------------------------------------------------ Render targets

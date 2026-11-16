@@ -1070,9 +1070,12 @@ FAssetMcpTextureInfo UAssetMcpEditorTools::CreateFlipbookTexture(const TArray<UT
 		return {};
 	}
 
-	// Read every frame before creating anything, converted to frame 0's source format.
+	// Read every frame before creating anything, converted to frame 0's source format. Pow22 (legacy gamma) sources
+	// become sRGB: ImageCore cannot write Pow22 and asserts (editor exit) when asked to.
 	TArray<FImage> Images;
 	Images.SetNum(Frames.Num());
+	ERawImageFormat::Type TargetFormat = ERawImageFormat::Invalid;
+	EGammaSpace TargetGamma = EGammaSpace::sRGB;
 	for (int32 Index = 0; Index < Frames.Num(); ++Index)
 	{
 		FImage Image;
@@ -1081,9 +1084,14 @@ FAssetMcpTextureInfo UAssetMcpEditorTools::CreateFlipbookTexture(const TArray<UT
 			ReportError(FString::Printf(TEXT("Could not read the source image of frame %d ('%s')."), Index, *Frames[Index]->GetPathName()));
 			return {};
 		}
-		if (Index > 0 && (Image.Format != Images[0].Format || Image.GammaSpace != Images[0].GammaSpace))
+		if (Index == 0)
 		{
-			Image.CopyTo(Images[Index], Images[0].Format, Images[0].GammaSpace);
+			TargetFormat = Image.Format;
+			TargetGamma = Image.GammaSpace == EGammaSpace::Pow22 ? EGammaSpace::sRGB : Image.GammaSpace;
+		}
+		if (Image.Format != TargetFormat || Image.GammaSpace != TargetGamma)
+		{
+			Image.CopyTo(Images[Index], TargetFormat, TargetGamma);
 		}
 		else
 		{
