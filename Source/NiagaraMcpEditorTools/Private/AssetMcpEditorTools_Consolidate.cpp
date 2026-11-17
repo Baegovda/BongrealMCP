@@ -2,6 +2,8 @@
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
+#include "AssetToolsModule.h"
+#include "IAssetTools.h"
 #include "Editor.h"
 #include "Engine/Texture.h"
 #include "FileHelpers.h"
@@ -388,6 +390,154 @@ FAssetMcpConsolidateResult UAssetMcpEditorTools::ConsolidateAssets(const TArray<
 			{
 				Result.Remaining.Add(PackageName);
 			}
+		}
+	}
+	return Result;
+}
+
+FAssetMcpRenameResult UAssetMcpEditorTools::RenameAssets(const TArray<FString>& Renames, bool bDryRun)
+{
+	using namespace AssetMcpConsolidate;
+	static constexpr int32 MaxRenames = 500;
+
+	if (Renames.Num() == 0 || Renames.Num() > MaxRenames)
+	{
+		ReportError(FString::Printf(TEXT("Pass 1-%d renames (got %d). Example: \"/Game/Packs/T_123|T_Smoke_Puff_01\""), MaxRenames, Renames.Num()));
+		return {};
+	}
+	if (GEditor == nullptr || GEditor->PlayWorld != nullptr)
+	{
+		ReportError(TEXT("Stop Play In Editor first: assets cannot be renamed while PIE is running."));
+		return {};
+	}
+	IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry").Get();
+	if (Registry.IsLoadingAssets())
+	{
+		Registry.WaitForCompletion();
+	}
+	TGuardValue<bool> UnattendedGuard(GIsRunningUnattendedScript, true);
+
+	FAssetMcpRenameResult Result;
+	Result.bDryRun = bDryRun;
+
+	struct FPlanned
+	{
+		TStrongObjectPtr<UObject> Asset;
+		FString OldPackage;
+		FString NewPackage;
+	};
+	TArray<FPlanned> Planned;
+	TSet<FString> Targets;
+	TSet<FString> Sources;
+
+	auto Skip = [&Result](const FString& What, const FString& Why)
+	{
+		Result.Skipped.Add(FString::Printf(TEXT("%s: %s"), *What, *Why));
+		++Result.SkippedCount;
+	};
+
+	for (const FString& Entry : Renames)
+	{
+		FString Old, Target;
+		if (!Entry.Split(TEXT("|"), &Old, &Target))
+		{
+			Skip(Entry, TEXT("expected \"old path|new name or new path\""));
+			continue;
+		}
+		Old = Old.TrimStartAndEnd();
+		Target = Target.TrimStartAndEnd();
+		const FString OldPackage = FPackageName::ObjectPathToPackageName(ToObjectPath(Old));
+		FString NewPackage = Target.StartsWith(TEXT("/"))
+			? FPackageName::ObjectPathToPackageName(ToObjectPath(Target))
+			: FPackageName::GetLongPackagePath(OldPackage) / Target;
+
+		FText Reason;
+		const FString NewName = FPackageName::GetShortName(NewPackage);
+		if (!FPackageName::IsValidLongPackageName(NewPackage, false, &Reason) || !FName::IsValidXName(NewName, INVALID_OBJECTNAME_CHARACTERS INVALID_LONGPACKAGE_CHARACTERS, &Reason))
+		{
+			Skip(Old, FString::Printf(TEXT("invalid new name '%s' (%s)"), *NewPackage, *Reason.ToString()));
+			continue;
+		}
+		if (NewPackage == OldPackage)
+		{
+			Skip(Old, TEXT("new name is the same"));
+			continue;
+		}
+		if (NewPackage.Equals(OldPackage, ESearchCase::IgnoreCase))
+		{
+			Skip(Old, TEXT("case-only renames are not supported (rename to a different name)"));
+			continue;
+		}
+		bool bTargetTaken = false;
+		Targets.Add(NewPackage.ToLower(), &bTargetTaken);
+		if (bTargetTaken || FPackageName::DoesPackageExist(NewPackage) || FindPackage(nullptr, *NewPackage) != nullptr)
+		{
+			Skip(Old, FString::Printf(TEXT("'%s' already exists or is the target of another entry"), *NewPackage));
+			continue;
+		}
+		bool bSourceTwice = false;
+		Sources.Add(OldPackage, &bSourceTwice);
+		if (bSourceTwice)
+		{
+			Skip(Old, TEXT("listed more than once"));
+			continue;
+		}
+		FString LoadReason;
+		UObject* Asset = LoadAsset(OldPackage, LoadReason);
+		if (Asset == nullptr)
+		{
+			Skip(Old, LoadReason);
+			continue;
+		}
+		Planned.Add({ TStrongObjectPtr<UObject>(Asset), OldPackage, NewPackage });
+	}
+
+	if (bDryRun)
+	{
+		for (const FPlanned& Plan : Planned)
+		{
+			Result.Renamed.Add(Plan.OldPackage + TEXT(" -> ") + Plan.NewPackage);
+		}
+		Result.RenamedCount = Planned.Num();
+		return Result;
+	}
+	if (Planned.Num() == 0)
+	{
+		return Result;
+	}
+
+	TArray<FAssetRenameData> Data;
+	for (const FPlanned& Plan : Planned)
+	{
+		Data.Emplace(Plan.Asset.Get(), FPackageName::GetLongPackagePath(Plan.NewPackage), FPackageName::GetShortName(Plan.NewPackage));
+	}
+	FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get().RenameAssets(Data);
+
+	for (const FPlanned& Plan : Planned)
+	{
+		const FString NewObjectPath = ToObjectPath(Plan.NewPackage);
+		const bool bNewThere = FindObject<UObject>(nullptr, *NewObjectPath) != nullptr || FPackageName::DoesPackageExist(Plan.NewPackage);
+		if (!bNewThere)
+		{
+			Skip(Plan.OldPackage, TEXT("the engine did not rename it (see the output log)"));
+			continue;
+		}
+		Result.Renamed.Add(Plan.OldPackage + TEXT(" -> ") + Plan.NewPackage);
+		++Result.RenamedCount;
+
+		// A redirector stays at the old path only when some referencer could not be updated; drop it once unused.
+		if (UObjectRedirector* Redirector = FindObject<UObjectRedirector>(nullptr, *ToObjectPath(Plan.OldPackage)))
+		{
+			TArray<FName> StillUsedBy;
+			Registry.GetReferencers(FName(*Plan.OldPackage), StillUsedBy);
+			if (StillUsedBy.Num() == 0 && ObjectTools::DeleteObjectsUnchecked({ Redirector }) > 0)
+			{
+				continue;
+			}
+		}
+		if (FPackageName::DoesPackageExist(Plan.OldPackage))
+		{
+			Result.RedirectorsLeft.Add(Plan.OldPackage);
 		}
 	}
 	return Result;

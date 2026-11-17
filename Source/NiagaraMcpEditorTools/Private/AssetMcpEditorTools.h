@@ -356,6 +356,34 @@ struct FAssetMcpConsolidateResult
 	TArray<FString> Remaining;
 };
 
+/** Result of RenameAssets. */
+USTRUCT()
+struct FAssetMcpRenameResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	bool bDryRun = true;
+
+	/** Renamed (dry run: would be renamed), as "old -> new" object paths. */
+	UPROPERTY()
+	TArray<FString> Renamed;
+
+	/** Left alone, as "old: reason" (target exists, invalid name, failed to load, engine refused...). */
+	UPROPERTY()
+	TArray<FString> Skipped;
+
+	UPROPERTY()
+	int32 RenamedCount = 0;
+
+	UPROPERTY()
+	int32 SkippedCount = 0;
+
+	/** Old paths where a redirector had to stay because something still references the old path. */
+	UPROPERTY()
+	TArray<FString> RedirectorsLeft;
+};
+
 /**
  * Support assets for VFX work: textures, render targets, material and Niagara parameter collections, Niagara effect
  * types, plus generic asset operations (read / set any editable property, duplicate, find references).
@@ -639,5 +667,19 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable, AIAccessMode = "Write"), Category = "Assets")
 	static FAssetMcpConsolidateResult ConsolidateAssets(const TArray<FString>& Groups, bool bDryRun = true, bool bAllowSettingDifferences = false, bool bAllowNonTextures = false);
+
+	/**
+	 * Renames and/or moves assets, updating every reference (loaded or not: users are loaded, fixed and re-saved) and
+	 * deleting the redirector at the old path when nothing needs it any more. Run with bDryRun = true first. Cannot be
+	 * undone by Undo; to revert, rename back. Targets that already exist are skipped, never overwritten.
+	 * Example entries: "/Game/Packs/T_123|T_Smoke_Puff_01" (rename in place),
+	 * "/Game/Packs/T_123|/Game/FX/Smoke/T_Smoke_Puff_01" (move and rename).
+	 *
+	 * @param Renames One entry per asset: old package or object path, "|", then the new name or new full package path (at most 500 per call)
+	 * @param bDryRun Only validate and report; change nothing
+	 * @return Renamed / skipped lists and any redirectors that had to stay
+	 */
+	UFUNCTION(meta = (AICallable, AIAccessMode = "Write"), Category = "Assets")
+	static FAssetMcpRenameResult RenameAssets(const TArray<FString>& Renames, bool bDryRun = true);
 	// ==== v0.5 VISION: end ====
 };

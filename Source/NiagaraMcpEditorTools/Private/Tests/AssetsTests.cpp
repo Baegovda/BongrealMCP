@@ -459,4 +459,74 @@ bool FAssetMcpConsolidateTest::RunTest(const FString& Parameters)
 	return !HasAnyErrors();
 }
 
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAssetMcpRenameTest, "NiagaraMcp.Assets.RenameAssets",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAssetMcpRenameTest::RunTest(const FString& Parameters)
+{
+	using namespace AssetMcpTests;
+	const FString Folder = MakeFolder() + TEXT("_Rename");
+	const FString PngFile = WriteTestPng();
+	const FString R1 = UAssetMcpEditorTools::ImportTexture(PngFile, Folder + TEXT("/T_R1"), true, TEXT("Auto"), true).Path;
+	const FString R2 = UAssetMcpEditorTools::ImportTexture(PngFile, Folder + TEXT("/T_R2"), true, TEXT("Auto"), true).Path;
+	const FString R3 = UAssetMcpEditorTools::ImportTexture(PngFile, Folder + TEXT("/T_R3"), true, TEXT("Auto"), true).Path;
+	if (!TestFalse(TEXT("Textures imported"), R1.IsEmpty() || R2.IsEmpty() || R3.IsEmpty()))
+	{
+		return false;
+	}
+	const FMaterialMcpGraphInfo MaterialInfo = UMaterialMcpEditorTools::CreateMaterial(Folder + TEXT("/M_UsesR1"), false);
+	UMaterial* Material = LoadObject<UMaterial>(nullptr, *MaterialInfo.MaterialPath);
+	if (!TestNotNull(TEXT("Material created"), Material))
+	{
+		return false;
+	}
+	const FMaterialMcpExpressionInfo Sample = UMaterialMcpEditorTools::AddExpression(Material, TEXT("TextureSample"), -300, 0);
+	UMaterialMcpEditorTools::SetExpressionProperty(Material, Sample.Name, TEXT("Texture"), R1);
+	UMaterialMcpEditorTools::ConnectToMaterialProperty(Material, Sample.Name, TEXT(""), TEXT("EmissiveColor"));
+	TestTrue(TEXT("Material using T_R1 compiles and saves"), UMaterialMcpEditorTools::CompileMaterial(Material, true).bSucceeded);
+
+	const FString P1 = FPackageName::ObjectPathToPackageName(R1);
+	const FString P2 = FPackageName::ObjectPathToPackageName(R2);
+	const FString P3 = FPackageName::ObjectPathToPackageName(R3);
+	const TArray<FString> Entries = {
+		P1 + TEXT("|T_Smoke_Renamed"),                    // rename in place
+		P2 + TEXT("|") + Folder + TEXT("/Sub/T_Moved"),   // move + rename
+		P3 + TEXT("|T_R1"),                               // target is another entry's source (still exists now): skipped
+		Folder + TEXT("/T_Missing|T_Whatever"),           // missing source
+		P3 + TEXT("|Bad Name!"),                          // invalid name
+	};
+
+	AddExpectedMessagePlain(TEXT("Pass 1-500 renames"), ELogVerbosity::Warning);
+	TestEqual(TEXT("Empty list is rejected"), UAssetMcpEditorTools::RenameAssets({}, true).RenamedCount, 0);
+
+	const FAssetMcpRenameResult Dry = UAssetMcpEditorTools::RenameAssets(Entries, true);
+	TestEqual(TEXT("Dry run renames 2"), Dry.RenamedCount, 2);
+	TestEqual(TEXT("Dry run skips 3"), Dry.SkippedCount, 3);
+	for (const FString& Line : Dry.Skipped)
+	{
+		AddInfo(TEXT("Skipped: ") + Line);
+	}
+	TestTrue(TEXT("Dry run changed nothing"), FPackageName::DoesPackageExist(P1));
+
+	const FAssetMcpRenameResult Done = UAssetMcpEditorTools::RenameAssets(Entries, false);
+	AddInfo(FString::Printf(TEXT("Renamed %d, skipped %d, redirectors left %d"), Done.RenamedCount, Done.SkippedCount, Done.RedirectorsLeft.Num()));
+	TestEqual(TEXT("Renamed 2"), Done.RenamedCount, 2);
+	TestEqual(TEXT("No redirector left"), Done.RedirectorsLeft.Num(), 0);
+	TestFalse(TEXT("Old T_R1 gone"), FPackageName::DoesPackageExist(P1));
+	TestFalse(TEXT("Old T_R2 gone"), FPackageName::DoesPackageExist(P2));
+	TestTrue(TEXT("T_Smoke_Renamed exists"), FPackageName::DoesPackageExist(Folder + TEXT("/T_Smoke_Renamed")));
+	TestTrue(TEXT("Moved texture exists"), FPackageName::DoesPackageExist(Folder + TEXT("/Sub/T_Moved")));
+	TestTrue(TEXT("Skipped T_R3 untouched"), FPackageName::DoesPackageExist(P3));
+	UMaterial* Reloaded = LoadObject<UMaterial>(nullptr, *MaterialInfo.MaterialPath);
+	if (TestNotNull(TEXT("Material still loads"), Reloaded))
+	{
+		TArray<UTexture*> Used;
+		Reloaded->GetUsedTextures(Used);
+		const FString Expected = Folder + TEXT("/T_Smoke_Renamed.T_Smoke_Renamed");
+		TestTrue(TEXT("Material samples the renamed texture"), Used.ContainsByPredicate([&Expected](const UTexture* T) { return T && T->GetPathName() == Expected; }));
+	}
+	return !HasAnyErrors();
+}
+
 #endif
