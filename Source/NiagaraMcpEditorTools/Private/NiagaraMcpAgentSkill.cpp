@@ -18,7 +18,7 @@ Top-level image tools (return a real image, prefer them for looking): niagara_ca
 ## Loop: observe -> edit -> verify
 1. Observe: GetSystemSummary, GetStack (inputs with values in SetModuleInput syntax), ExportSystemSpec (whole system
    as compact JSON), GetSystemProperties / GetEmitterProperties / GetRendererProperties (valid names + enum values),
-   FindModuleScripts, FindDynamicInputs, FindAssets, GetAssetReferences (ConsolidateAssets merges duplicates).
+   FindModuleScripts, FindDynamicInputs, FindAssets, GetAssetReferences (ConsolidateAssets merges duplicates, RenameAssets renames and fixes references).
 2. Edit. Each write is one undo transaction (Undo/Redo). For more than ~3 edits use ExecuteBatch:
    [{"Id":"e","Tool":"AddModule","Arguments":"{...}"}, {"Tool":"SetModuleInput","Arguments":"{\"Module\": \"$e.moduleId\", ...}"}]
    (steps reference earlier results as "$Id.field"; one save at the end; bRollbackOnError undoes everything on failure;
