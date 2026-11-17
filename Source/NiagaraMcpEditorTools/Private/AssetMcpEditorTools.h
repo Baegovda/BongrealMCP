@@ -382,6 +382,45 @@ struct FAssetMcpRenameResult
 	/** Old paths where a redirector had to stay because something still references the old path. */
 	UPROPERTY()
 	TArray<FString> RedirectorsLeft;
+
+	/** Packages re-saved so they point at the new paths (maps and other users the engine's rename did not update). */
+	UPROPERTY()
+	TArray<FString> SavedPackages;
+};
+
+/** Result of FixRedirectors. */
+USTRUCT()
+struct FAssetMcpFixRedirectorsResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	bool bDryRun = true;
+
+	/** Redirectors found, as "redirector -> target (N referencers)". */
+	UPROPERTY()
+	TArray<FString> Found;
+
+	/** Redirector packages deleted after their users were re-saved. */
+	UPROPERTY()
+	TArray<FString> Fixed;
+
+	/** Redirectors still referenced afterwards, as "redirector: referencers". */
+	UPROPERTY()
+	TArray<FString> Left;
+
+	UPROPERTY()
+	TArray<FString> SavedPackages;
+
+	UPROPERTY()
+	int32 FoundCount = 0;
+
+	UPROPERTY()
+	int32 FixedCount = 0;
+
+	/** More redirectors exist than one call handles; call again. */
+	UPROPERTY()
+	bool bTruncated = false;
 };
 
 /**
@@ -681,5 +720,17 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable, AIAccessMode = "Write"), Category = "Assets")
 	static FAssetMcpRenameResult RenameAssets(const TArray<FString>& Renames, bool bDryRun = true);
+
+	/**
+	 * Fixes up redirectors (left behind by renames, moves or merges) under a folder: every asset that still points at a
+	 * redirector, maps included, is loaded and re-saved so it points at the real asset, then the redirector is deleted.
+	 * Redirectors that are still referenced afterwards (e.g. a referencer failed to save) stay and are listed.
+	 *
+	 * @param Path Folder (searched recursively) or a single redirector's package path, e.g. "/Game/Textures"
+	 * @param bDryRun Only list the redirectors and their referencers; change nothing
+	 * @return Found / fixed / left redirectors and the re-saved packages
+	 */
+	UFUNCTION(meta = (AICallable, AIAccessMode = "Write"), Category = "Assets")
+	static FAssetMcpFixRedirectorsResult FixRedirectors(const FString& Path, bool bDryRun = true);
 	// ==== v0.5 VISION: end ====
 };

@@ -131,6 +131,92 @@ namespace AssetMcpConsolidate
 		}
 		return Differences.Num() ? TEXT("different settings (") + FString::Join(Differences, TEXT(", ")) + TEXT(")") : FString();
 	}
+
+	/**
+	 * Re-saves every package that still references one of the redirector packages (maps included: the engine's own
+	 * rename does not touch unloaded maps), then deletes each redirector nothing references any more.
+	 */
+	void FixupRedirectorPackages(IAssetRegistry& Registry, const TArray<FString>& RedirectorPackages, TArray<FString>& OutFixed, TArray<FString>& OutLeft, TArray<FString>& OutSaved)
+	{
+		TSet<FName> RedirectorNames;
+		// Load the redirectors first: users loaded afterwards resolve hard references through them, and soft
+		// references are rewritten on save from the redirects recorded while loading.
+		TArray<TStrongObjectPtr<UObjectRedirector>> Redirectors;
+		for (const FString& Package : RedirectorPackages)
+		{
+			if (UObjectRedirector* Redirector = LoadObject<UObjectRedirector>(nullptr, *ToObjectPath(Package), nullptr, LOAD_NoWarn | LOAD_Quiet))
+			{
+				Redirectors.Emplace(Redirector);
+				RedirectorNames.Add(FName(*Package));
+			}
+		}
+		TSet<FName> UserNames;
+		for (const FName& Name : RedirectorNames)
+		{
+			TArray<FName> Names;
+			Registry.GetReferencers(Name, Names);
+			for (const FName& User : Names)
+			{
+				if (!RedirectorNames.Contains(User) && !User.ToString().StartsWith(TEXT("/Script/")))
+				{
+					UserNames.Add(User);
+				}
+			}
+		}
+		TArray<TStrongObjectPtr<UPackage>> Users;
+		TArray<UPackage*> ToSave;
+		for (const FName& User : UserNames)
+		{
+			if (UPackage* Package = LoadPackage(nullptr, *User.ToString(), LOAD_NoWarn | LOAD_Quiet))
+			{
+				Users.Emplace(Package);
+				Package->MarkPackageDirty();
+				ToSave.Add(Package);
+			}
+		}
+		if (ToSave.Num() > 0)
+		{
+			UEditorLoadingAndSavingUtils::SavePackages(ToSave, /*bOnlyDirty*/ true);
+			TArray<FString> SavedFiles;
+			for (UPackage* Package : ToSave)
+			{
+				OutSaved.AddUnique(Package->GetName());
+				FString Filename;
+				if (FPackageName::DoesPackageExist(Package->GetName(), &Filename))
+				{
+					SavedFiles.Add(FPaths::ConvertRelativePathToFull(Filename));
+				}
+			}
+			Registry.ScanFilesSynchronous(SavedFiles, true);
+		}
+		Users.Empty();
+
+		for (TStrongObjectPtr<UObjectRedirector>& Redirector : Redirectors)
+		{
+			const FString Package = Redirector->GetOutermost()->GetName();
+			TArray<FName> StillUsedBy;
+			Registry.GetReferencers(FName(*Package), StillUsedBy);
+			StillUsedBy.RemoveAll([&RedirectorNames](const FName& Name) { return RedirectorNames.Contains(Name); });
+			if (StillUsedBy.Num() == 0)
+			{
+				UObject* Object = Redirector.Get();
+				Redirector.Reset();
+				if (ObjectTools::DeleteObjectsUnchecked({ Object }) > 0)
+				{
+					OutFixed.Add(Package);
+					continue;
+				}
+				OutLeft.Add(Package + TEXT(": could not be deleted (see the output log)"));
+				continue;
+			}
+			TArray<FString> UserList;
+			for (const FName& Name : StillUsedBy)
+			{
+				UserList.Add(Name.ToString());
+			}
+			OutLeft.Add(Package + TEXT(": still used by ") + FString::Join(UserList, TEXT(", ")));
+		}
+	}
 }
 
 FAssetMcpConsolidateResult UAssetMcpEditorTools::ConsolidateAssets(const TArray<FString>& Groups, bool bDryRun, bool bAllowSettingDifferences, bool bAllowNonTextures)
@@ -513,6 +599,7 @@ FAssetMcpRenameResult UAssetMcpEditorTools::RenameAssets(const TArray<FString>& 
 	}
 	FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get().RenameAssets(Data);
 
+	TArray<FString> WithRedirector;
 	for (const FPlanned& Plan : Planned)
 	{
 		const FString NewObjectPath = ToObjectPath(Plan.NewPackage);
@@ -524,21 +611,87 @@ FAssetMcpRenameResult UAssetMcpEditorTools::RenameAssets(const TArray<FString>& 
 		}
 		Result.Renamed.Add(Plan.OldPackage + TEXT(" -> ") + Plan.NewPackage);
 		++Result.RenamedCount;
-
-		// A redirector stays at the old path only when some referencer could not be updated; drop it once unused.
-		if (UObjectRedirector* Redirector = FindObject<UObjectRedirector>(nullptr, *ToObjectPath(Plan.OldPackage)))
+		// The engine leaves a redirector when some user was not updated (unloaded maps, for one); it may not be on disk yet.
+		if (FindObject<UObjectRedirector>(nullptr, *ToObjectPath(Plan.OldPackage)) != nullptr || FPackageName::DoesPackageExist(Plan.OldPackage))
 		{
-			TArray<FName> StillUsedBy;
-			Registry.GetReferencers(FName(*Plan.OldPackage), StillUsedBy);
-			if (StillUsedBy.Num() == 0 && ObjectTools::DeleteObjectsUnchecked({ Redirector }) > 0)
-			{
-				continue;
-			}
-		}
-		if (FPackageName::DoesPackageExist(Plan.OldPackage))
-		{
-			Result.RedirectorsLeft.Add(Plan.OldPackage);
+			WithRedirector.Add(Plan.OldPackage);
 		}
 	}
+	Planned.Empty();
+	if (WithRedirector.Num() > 0)
+	{
+		TArray<FString> Fixed;
+		FixupRedirectorPackages(Registry, WithRedirector, Fixed, Result.RedirectorsLeft, Result.SavedPackages);
+	}
+	return Result;
+}
+
+FAssetMcpFixRedirectorsResult UAssetMcpEditorTools::FixRedirectors(const FString& Path, bool bDryRun)
+{
+	using namespace AssetMcpConsolidate;
+	static constexpr int32 MaxRedirectors = 2000;
+
+	const FString Trimmed = Path.TrimStartAndEnd();
+	FText Reason;
+	const FString PackagePath = FPackageName::ObjectPathToPackageName(Trimmed);
+	if (!FPackageName::IsValidLongPackageName(PackagePath, false, &Reason))
+	{
+		ReportError(FString::Printf(TEXT("'%s' is not a valid folder or package path (%s). Example: /Game/Textures"), *Path, *Reason.ToString()));
+		return {};
+	}
+	if (GEditor == nullptr || GEditor->PlayWorld != nullptr)
+	{
+		ReportError(TEXT("Stop Play In Editor first: redirectors cannot be fixed while PIE is running."));
+		return {};
+	}
+	IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry").Get();
+	if (Registry.IsLoadingAssets())
+	{
+		Registry.WaitForCompletion();
+	}
+	TGuardValue<bool> UnattendedGuard(GIsRunningUnattendedScript, true);
+
+	FARFilter Filter;
+	Filter.ClassPaths.Add(UObjectRedirector::StaticClass()->GetClassPathName());
+	if (FPackageName::DoesPackageExist(PackagePath))
+	{
+		Filter.PackageNames.Add(FName(*PackagePath));
+	}
+	else
+	{
+		Filter.PackagePaths.Add(FName(*PackagePath));
+		Filter.bRecursivePaths = true;
+	}
+	TArray<FAssetData> Found;
+	Registry.GetAssets(Filter, Found);
+
+	FAssetMcpFixRedirectorsResult Result;
+	Result.bDryRun = bDryRun;
+	Result.FoundCount = Found.Num();
+	if (Found.Num() > MaxRedirectors)
+	{
+		Found.SetNum(MaxRedirectors);
+		Result.bTruncated = true;
+	}
+	TArray<FString> Packages;
+	for (const FAssetData& Asset : Found)
+	{
+		const FString Package = Asset.PackageName.ToString();
+		Packages.Add(Package);
+		TArray<FName> Users;
+		Registry.GetReferencers(Asset.PackageName, Users);
+		FString Target;
+		if (UObjectRedirector* Redirector = Cast<UObjectRedirector>(Asset.GetAsset()))
+		{
+			Target = Redirector->DestinationObject ? Redirector->DestinationObject->GetPathName() : TEXT("(missing target)");
+		}
+		Result.Found.Add(FString::Printf(TEXT("%s -> %s (%d referencers)"), *Package, *Target, Users.Num()));
+	}
+	if (bDryRun || Packages.Num() == 0)
+	{
+		return Result;
+	}
+	FixupRedirectorPackages(Registry, Packages, Result.Fixed, Result.Left, Result.SavedPackages);
+	Result.FixedCount = Result.Fixed.Num();
 	return Result;
 }

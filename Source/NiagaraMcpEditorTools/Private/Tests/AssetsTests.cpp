@@ -526,6 +526,12 @@ bool FAssetMcpRenameTest::RunTest(const FString& Parameters)
 		const FString Expected = Folder + TEXT("/T_Smoke_Renamed.T_Smoke_Renamed");
 		TestTrue(TEXT("Material samples the renamed texture"), Used.ContainsByPredicate([&Expected](const UTexture* T) { return T && T->GetPathName() == Expected; }));
 	}
+
+	AddExpectedMessagePlain(TEXT("is not a valid folder or package path"), ELogVerbosity::Warning);
+	TestEqual(TEXT("Invalid path is rejected"), UAssetMcpEditorTools::FixRedirectors(TEXT("not a path"), true).FoundCount, 0);
+	const FAssetMcpFixRedirectorsResult Fix = UAssetMcpEditorTools::FixRedirectors(Folder, false);
+	TestEqual(TEXT("No redirectors remain in the folder"), Fix.FoundCount, 0);
+	TestEqual(TEXT("Nothing left"), Fix.Left.Num(), 0);
 	return !HasAnyErrors();
 }
 
