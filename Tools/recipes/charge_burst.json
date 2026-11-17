@@ -1,0 +1,948 @@
+{
+ "name": "charge_burst",
+ "description": "Anticipation and release: for 1 s blue streaks are sucked into a growing, trembling core (spawn rate and size ease in), the core squashes, then at 1.0 s it snaps - white flash, a glow wave that rushes out and stops, and 160 streaks fired out and braked by drag. Colors are tuned for an additive material with an emissive boost (about 6x, e.g. a soft radial mask); with DefaultSpriteMaterial raise them.",
+ "placeholders": {
+  "SystemPath": "/Game/FX/NS_ChargeBurst",
+  "SpriteMaterial": "/Niagara/DefaultAssets/DefaultSpriteMaterial.DefaultSpriteMaterial"
+ },
+ "usage": "Replace every {{Placeholder}} (defaults above), turn each Arguments object into a JSON string and run the operations with ExecuteBatch(Operations, Expect=expect). Python: McpClient().recipe(name, SystemPath=...).",
+ "expect": "Compiles:{{SystemPath}};Valid:{{SystemPath}};Particles:{{SystemPath}}:Gather@0.5>=1;Particles:{{SystemPath}}:Shards@1.1>=1",
+ "operations": [
+  {
+   "Id": "sys",
+   "Tool": "CreateSystem",
+   "Arguments": {
+    "AssetPath": "{{SystemPath}}"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnRate.SpawnRate"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Location/SphereLocation.SphereLocation"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Velocity/AddVelocityFromPoint.AddVelocityFromPoint"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/PointAttractionForce.PointAttractionForce"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Solvers/SolveForcesAndVelocity.SolveForcesAndVelocity"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Emitter State",
+    "Input": "Life Cycle Mode",
+    "Value": "Self"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Emitter State",
+    "Input": "Loop Behavior",
+    "Value": "Once"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Emitter State",
+    "Input": "Loop Duration",
+    "Value": "0.88"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Spawn Rate",
+    "Input": "SpawnRate",
+    "Value": "=lerp(80, 1100, pow(saturate(Emitter.Age / 1.0), 2))"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Sphere Location",
+    "Input": "Sphere Radius",
+    "Value": "230"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Sphere Location",
+    "Input": "Surface Only Band Thickness",
+    "Value": "0.1"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Add Velocity from Point",
+    "Input": "Velocity Strength",
+    "Value": "-250"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Point Attraction Force",
+    "Input": "AttractionStrength",
+    "Value": "6000"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Point Attraction Force",
+    "Input": "Attraction Radius",
+    "Value": "500"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Point Attraction Force",
+    "Input": "Falloff Exponent",
+    "Value": "0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Point Attraction Force",
+    "Input": "Kill Radius",
+    "Value": "45"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime",
+    "Value": "0.35"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Random Non-Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Min",
+    "Value": "(X=2,Y=14)"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Max",
+    "Value": "(X=4,Y=48)"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(0.05, 0.3, 0.6, 0), float4(0.25, 0.6, 0.9, 1), saturate(Particles.NormalizedAge / 0.35)), float4(0.6, 0.85, 1.0, 1), saturate((Particles.NormalizedAge - 0.35) / (1.0 - 0.35))) * float4(1, 1, 1, step(dot(Particles.Velocity, Particles.Position), 0.0))"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Gather",
+    "RendererIndex": 0,
+    "PropertyName": "Alignment",
+    "Value": "VelocityAligned"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnBurst_Instantaneous.SpawnBurst_Instantaneous"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Size/ScaleSpriteSize.ScaleSpriteSize"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Emitter State",
+    "Input": "Life Cycle Mode",
+    "Value": "Self"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Emitter State",
+    "Input": "Loop Behavior",
+    "Value": "Once"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Emitter State",
+    "Input": "Loop Duration",
+    "Value": "1.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Count",
+    "Value": "1"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime",
+    "Value": "1.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size",
+    "Value": "120"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Scale Sprite Size",
+    "Input": "Scale Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Scale Sprite Size",
+    "Input": "Uniform Scale Factor",
+    "Value": "=lerp(0.15, 1.0, pow(saturate(Particles.NormalizedAge / 0.85), 2)) * lerp(1.0, 0.3, saturate((Particles.NormalizedAge - 0.85) / 0.15)) * (1.0 + 0.15 * Particles.NormalizedAge * sin(Particles.Age * (20.0 + 90.0 * Particles.NormalizedAge)))"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Core",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(float4(0.1, 0.35, 0.7, 0.6), float4(0.7, 0.9, 1.0, 1), pow(Particles.NormalizedAge, 3))"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnBurst_Instantaneous.SpawnBurst_Instantaneous"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Size/ScaleSpriteSize.ScaleSpriteSize"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Emitter State",
+    "Input": "Life Cycle Mode",
+    "Value": "Self"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Emitter State",
+    "Input": "Loop Behavior",
+    "Value": "Once"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Emitter State",
+    "Input": "Loop Duration",
+    "Value": "1.5"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Count",
+    "Value": "1"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Time",
+    "Value": "1.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime",
+    "Value": "0.16"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size",
+    "Value": "260"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Scale Sprite Size",
+    "Input": "Scale Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Scale Sprite Size",
+    "Input": "Uniform Scale Factor",
+    "Value": "=lerp(1.0, 0.5, Particles.NormalizedAge)"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Flash",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(0.5, 0.65, 0.95, 1), float4(0.25, 0.45, 0.9, 0.5), saturate(Particles.NormalizedAge / 0.3)), float4(0.1, 0.2, 0.6, 0), saturate((Particles.NormalizedAge - 0.3) / (1.0 - 0.3)))"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnBurst_Instantaneous.SpawnBurst_Instantaneous"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Size/ScaleSpriteSize.ScaleSpriteSize"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Emitter State",
+    "Input": "Life Cycle Mode",
+    "Value": "Self"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Emitter State",
+    "Input": "Loop Behavior",
+    "Value": "Once"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Emitter State",
+    "Input": "Loop Duration",
+    "Value": "1.6"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Count",
+    "Value": "1"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Time",
+    "Value": "1.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime",
+    "Value": "0.35"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Initialize Particle",
+    "Input": "Uniform Sprite Size",
+    "Value": "120"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Scale Sprite Size",
+    "Input": "Scale Sprite Size Mode",
+    "Value": "Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Scale Sprite Size",
+    "Input": "Uniform Scale Factor",
+    "Value": "=1.0 + 2.5 * (1.0 - pow(1.0 - Particles.NormalizedAge, 3))"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Wave",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(0.12, 0.3, 0.6, 0.5), float4(0.06, 0.16, 0.45, 0.25), saturate(Particles.NormalizedAge / 0.25)), float4(0.08, 0.03, 0.3, 0), saturate((Particles.NormalizedAge - 0.25) / (1.0 - 0.25)))"
+   }
+  },
+  {
+   "Tool": "AddEmitter",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "TemplateEmitter": "Minimal"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "RendererIndex": 0,
+    "PropertyName": "Material",
+    "Value": "{{SpriteMaterial}}"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "StackName": "EmitterUpdate",
+    "ModuleScript": "/Niagara/Modules/Emitter/SpawnBurst_Instantaneous.SpawnBurst_Instantaneous"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Location/SphereLocation.SphereLocation"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "StackName": "ParticleSpawn",
+    "ModuleScript": "/Niagara/Modules/Spawn/Velocity/AddVelocityFromPoint.AddVelocityFromPoint"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Forces/Drag.Drag"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Solvers/SolveForcesAndVelocity.SolveForcesAndVelocity"
+   }
+  },
+  {
+   "Tool": "AddModule",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "StackName": "ParticleUpdate",
+    "ModuleScript": "/Niagara/Modules/Update/Color/Color.Color"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Emitter State",
+    "Input": "Life Cycle Mode",
+    "Value": "Self"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Emitter State",
+    "Input": "Loop Behavior",
+    "Value": "Once"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Emitter State",
+    "Input": "Loop Duration",
+    "Value": "2.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Count",
+    "Value": "160"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Spawn Burst Instantaneous",
+    "Input": "Spawn Time",
+    "Value": "1.0"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Sphere Location",
+    "Input": "Sphere Radius",
+    "Value": "10"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Add Velocity from Point",
+    "Input": "Velocity Strength",
+    "Value": "1900"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Drag",
+    "Input": "Drag",
+    "Value": "5"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Mode",
+    "Value": "Random"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Min",
+    "Value": "0.35"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Initialize Particle",
+    "Input": "Lifetime Max",
+    "Value": "0.8"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Mode",
+    "Value": "Random Non-Uniform"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Min",
+    "Value": "(X=3,Y=30)"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Initialize Particle",
+    "Input": "Sprite Size Max",
+    "Value": "(X=7,Y=80)"
+   }
+  },
+  {
+   "Tool": "SetModuleInput",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "Module": "Color",
+    "Input": "Color",
+    "Value": "=lerp(lerp(float4(0.85, 0.95, 1.0, 1), float4(0.3, 0.6, 1.0, 1), saturate(Particles.NormalizedAge / 0.3)), float4(0.3, 0.1, 0.7, 0), saturate((Particles.NormalizedAge - 0.3) / (1.0 - 0.3)))"
+   }
+  },
+  {
+   "Tool": "SetRendererProperty",
+   "Arguments": {
+    "System": "{{SystemPath}}",
+    "EmitterName": "Shards",
+    "RendererIndex": 0,
+    "PropertyName": "Alignment",
+    "Value": "VelocityAligned"
+   }
+  }
+ ]
+}

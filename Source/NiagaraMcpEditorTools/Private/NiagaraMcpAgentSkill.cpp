@@ -62,7 +62,7 @@ Top-level image tools (return a real image, prefer them for looking): niagara_ca
   something in the editor; re-read those assets (GetStack / ExportSystemSpec) before changing them.
 - Before experiments: CreateRestorePoint("before_x"); revert the whole experiment with RollbackToRestorePoint
   (refuses if the user edited in between, unless bAllowUserChanges). Asset creation is not undoable.
-- Recipes: ready ExecuteBatch scripts (fireball, spark_burst, smoke_puff, magic_orb, impact_flash) as MCP resources
+- Recipes: ready ExecuteBatch scripts (fireball, spark_burst, smoke_puff, magic_orb, impact_flash, charge_burst) as MCP resources
   niagara-mcp://recipes/<name>; fill {{SystemPath}} / {{SpriteMaterial}} and run them, then tune.
 - ExecuteBatch Expect="Compiles:<sys>;Valid:<sys>;Particles:<sys>:<Emitter|Any>@0.5>=1" verifies the result and rolls
   back when it fails.

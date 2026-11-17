@@ -27,6 +27,11 @@ Unreal MCP는 툴셋 결과를 모두 텍스트로 감쌉니다. 그래서 `call
 모든 편집은 **Undo 트랜잭션** 안에서 실행되므로 Ctrl+Z로 되돌릴 수 있습니다.
 스택 편집은 나이아가라 에디터 UI와 같은 스택 뷰모델을 거칩니다. 그래서 시스템을 나이아가라 에디터에 열어 둔 상태에서도 동작합니다.
 
+## 0.5.6 charge_burst 레시피
+
+- 새 레시피 `charge_burst`: 모았다가 터뜨리는 이펙트입니다. 1초 동안 파란 줄무늬가 가속하며 중심으로 빨려 들어가고(생성량도 점점 증가), 코어가 떨리며 커지다가 직전에 움츠러듭니다. 1.0초에 흰 섬광, 밀려 나갔다 멈추는 광채, 줄무늬 160개가 튀어 나가 드래그로 급정지합니다.
+- 중심을 지나친 줄무늬는 보이지 않게 처리해 모이는 동작이 깔끔합니다.
+
 ## 0.5.5 스킬 문서: 이펙트를 보기 좋게 만드는 요령
 
 - 에이전트 스킬(`niagara-mcp://skill/niagara-vfx-authoring`)에 "Making it look right" 절을 추가했습니다. 이펙트 5종을 실제로 만들고 다듬으며 겪은 시행착오를 정리한 것입니다: 가산 머티리얼 색 범위(하얗게 날아감 방지), 미리보기 카메라 거리, 연기 텍스처 머티리얼, Scale Sprite Size 모드, 줄무늬 불꽃 설정, 힘 모듈 순서, 무작위 회전, ParticleColor 알파 출력, 마켓플레이스 텍스처 채널, 다듬은 값을 레시피에 되돌려 넣기.
@@ -100,7 +105,7 @@ GitHub의 유사 MCP(나이아가라 특화 12개, 범용 언리얼 MCP, 블렌�
 | 페이징 | `GetStack(ModuleFilter)`, `GetScriptGraph(NodeFilter, Offset, MaxNodes)`, `GetMaterialGraph(ClassFilter, Offset, MaxExpressions)` |
 | `ListNiagaraTemplates` | 엔진 템플릿 목록과 설명 |
 | MCP 리소스 | `niagara-mcp://skill/...`, `log/recent`, `changes/recent`, `system/<경로>/spec`, `recipes/<이름>` |
-| 레시피 | `Tools/recipes`: fireball, spark_burst, smoke_puff, magic_orb, impact_flash (ExecuteBatch 스크립트, 테스트로 컴파일·검증·파티클 확인) |
+| 레시피 | `Tools/recipes`: fireball, spark_burst, smoke_puff, magic_orb, impact_flash, charge_burst (ExecuteBatch 스크립트, 테스트로 컴파일·검증·파티클 확인) |
 | 안전장치 | PIE 중 저장 거부, 배치 중 모달 대화상자 방지, `Saved/NiagaraMcp/health.json` 상태 파일 |
 
 ## 설치
