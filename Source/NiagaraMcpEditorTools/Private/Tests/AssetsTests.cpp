@@ -375,4 +375,88 @@ bool FAssetMcpCollectionsTest::RunTest(const FString& Parameters)
 	return !HasAnyErrors();
 }
 
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAssetMcpConsolidateTest, "NiagaraMcp.Assets.ConsolidateDuplicates",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAssetMcpConsolidateTest::RunTest(const FString& Parameters)
+{
+	using namespace AssetMcpTests;
+	const FString Folder = MakeFolder() + TEXT("_Consolidate");
+	const FString PngFile = WriteTestPng();
+	if (!TestFalse(TEXT("Test PNG written"), PngFile.IsEmpty()))
+	{
+		return false;
+	}
+	// A, B, C: the same PNG with the same settings. D: same pixels, sRGB off. E: a duplicate of A (identical source).
+	const FString A = UAssetMcpEditorTools::ImportTexture(PngFile, Folder + TEXT("/T_A"), true, TEXT("Auto"), true).Path;
+	const FString B = UAssetMcpEditorTools::ImportTexture(PngFile, Folder + TEXT("/T_B"), true, TEXT("Auto"), true).Path;
+	const FString C = UAssetMcpEditorTools::ImportTexture(PngFile, Folder + TEXT("/T_C"), true, TEXT("Auto"), true).Path;
+	const FString D = UAssetMcpEditorTools::ImportTexture(PngFile, Folder + TEXT("/T_D"), false, TEXT("Auto"), true).Path;
+	UTexture2D* TextureA = LoadObject<UTexture2D>(nullptr, *A);
+	if (!TestNotNull(TEXT("T_A imported"), TextureA) || B.IsEmpty() || C.IsEmpty() || D.IsEmpty())
+	{
+		return false;
+	}
+	const FString E = UAssetMcpEditorTools::DuplicateAsset(TextureA, Folder + TEXT("/T_E"), true).Path;
+
+	// A material that uses B: after the merge it must use A.
+	const FMaterialMcpGraphInfo MaterialInfo = UMaterialMcpEditorTools::CreateMaterial(Folder + TEXT("/M_UsesB"), false);
+	UMaterial* Material = LoadObject<UMaterial>(nullptr, *MaterialInfo.MaterialPath);
+	if (!TestNotNull(TEXT("Material created"), Material))
+	{
+		return false;
+	}
+	const FMaterialMcpExpressionInfo Sample = UMaterialMcpEditorTools::AddExpression(Material, TEXT("TextureSample"), -300, 0);
+	UMaterialMcpEditorTools::SetExpressionProperty(Material, Sample.Name, TEXT("Texture"), B);
+	UMaterialMcpEditorTools::ConnectToMaterialProperty(Material, Sample.Name, TEXT(""), TEXT("EmissiveColor"));
+	TestTrue(TEXT("Material using T_B compiles and saves"), UMaterialMcpEditorTools::CompileMaterial(Material, true).bSucceeded);
+
+	const FString Group = FString::Join(TArray<FString>{ A, B, C, D, E }, TEXT("|"));
+
+	// Bad input is rejected before anything happens.
+	AddExpectedMessagePlain(TEXT("at least one duplicate"), ELogVerbosity::Warning);
+	TestEqual(TEXT("A group of one is rejected"), UAssetMcpEditorTools::ConsolidateAssets({ A }, true, false, false).Groups.Num(), 0);
+	AddExpectedMessagePlain(TEXT("appears more than once"), ELogVerbosity::Warning);
+	TestEqual(TEXT("An asset in two groups is rejected"), UAssetMcpEditorTools::ConsolidateAssets({ A + TEXT("|") + B, C + TEXT("|") + B }, true, false, false).Groups.Num(), 0);
+	TestEqual(TEXT("A material is skipped without bAllowNonTextures"),
+		UAssetMcpEditorTools::ConsolidateAssets({ MaterialInfo.MaterialPath + TEXT("|") + A }, true, false, false).SkippedCount, 1);
+
+	// Dry run: B, C, E would go; D differs in sRGB.
+	const FAssetMcpConsolidateResult Dry = UAssetMcpEditorTools::ConsolidateAssets({ Group }, true, false, false);
+	TestTrue(TEXT("Dry run flag"), Dry.bDryRun);
+	TestEqual(TEXT("Dry run removes 3"), Dry.RemovedCount, 3);
+	TestEqual(TEXT("Dry run skips 1"), Dry.SkippedCount, 1);
+	if (TestEqual(TEXT("Dry run has one group"), Dry.Groups.Num(), 1) && TestEqual(TEXT("Dry run skipped list"), Dry.Groups[0].Skipped.Num(), 1))
+	{
+		AddInfo(TEXT("Skipped: ") + Dry.Groups[0].Skipped[0]);
+		TestTrue(TEXT("D is skipped for its sRGB setting"), Dry.Groups[0].Skipped[0].Contains(TEXT("SRGB")));
+	}
+	TestTrue(TEXT("Dry run changed nothing"), FPackageName::DoesPackageExist(FPackageName::ObjectPathToPackageName(B)));
+	TestEqual(TEXT("With bAllowSettingDifferences D would go too"), UAssetMcpEditorTools::ConsolidateAssets({ Group }, true, true, false).RemovedCount, 4);
+
+	// The real merge.
+	const FAssetMcpConsolidateResult Done = UAssetMcpEditorTools::ConsolidateAssets({ Group }, false, false, false);
+	AddInfo(FString::Printf(TEXT("Removed %d, skipped %d, saved %d, redirectors fixed %d, remaining %d"), Done.RemovedCount, Done.SkippedCount,
+		Done.SavedPackages.Num(), Done.RedirectorsFixed, Done.Remaining.Num()));
+	TestFalse(TEXT("Real run flag"), Done.bDryRun);
+	TestEqual(TEXT("Removed 3"), Done.RemovedCount, 3);
+	TestEqual(TEXT("Nothing left behind"), Done.Remaining.Num(), 0);
+	for (const FString& Gone : { B, C, E })
+	{
+		TestFalse(FString::Printf(TEXT("%s deleted"), *Gone), FPackageName::DoesPackageExist(FPackageName::ObjectPathToPackageName(Gone)));
+	}
+	TestTrue(TEXT("Kept texture still exists"), FPackageName::DoesPackageExist(FPackageName::ObjectPathToPackageName(A)));
+	TestTrue(TEXT("Skipped texture still exists"), FPackageName::DoesPackageExist(FPackageName::ObjectPathToPackageName(D)));
+	TestTrue(TEXT("Material now references T_A"), ContainsPackage(UAssetMcpEditorTools::GetAssetReferences(A, true, false, 100).Referencers, MaterialInfo.MaterialPath));
+	UMaterial* Reloaded = LoadObject<UMaterial>(nullptr, *MaterialInfo.MaterialPath);
+	if (TestNotNull(TEXT("Material still loads"), Reloaded))
+	{
+		TArray<UTexture*> Used;
+		Reloaded->GetUsedTextures(Used);
+		TestTrue(TEXT("Material samples T_A"), Used.ContainsByPredicate([&A](const UTexture* T) { return T && T->GetPathName() == A; }));
+	}
+	return !HasAnyErrors();
+}
+
 #endif

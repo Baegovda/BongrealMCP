@@ -305,6 +305,57 @@ struct FAssetMcpNiagaraParameterCollectionInfo
 	bool bSaved = false;
 };
 
+/** One duplicate group handled by ConsolidateAssets. */
+USTRUCT()
+struct FAssetMcpConsolidateGroup
+{
+	GENERATED_BODY()
+
+	/** The asset that stays (object path). */
+	UPROPERTY()
+	FString Kept;
+
+	/** Duplicates merged into Kept (dry run: the ones that would be). Their references now point at Kept and their packages are deleted. */
+	UPROPERTY()
+	TArray<FString> Removed;
+
+	/** Duplicates left alone, as "path: reason" (not identical, different settings, failed to load...). */
+	UPROPERTY()
+	TArray<FString> Skipped;
+};
+
+/** Result of ConsolidateAssets. */
+USTRUCT()
+struct FAssetMcpConsolidateResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	bool bDryRun = true;
+
+	UPROPERTY()
+	TArray<FAssetMcpConsolidateGroup> Groups;
+
+	/** Number of duplicates removed (dry run: that would be removed). */
+	UPROPERTY()
+	int32 RemovedCount = 0;
+
+	UPROPERTY()
+	int32 SkippedCount = 0;
+
+	/** Packages that used a duplicate, re-saved pointing at the kept asset. */
+	UPROPERTY()
+	TArray<FString> SavedPackages;
+
+	/** Redirectors left at the old paths by the merge that were deleted because nothing uses them any more. */
+	UPROPERTY()
+	int32 RedirectorsFixed = 0;
+
+	/** Old paths that still exist on disk afterwards: a redirector something still uses (e.g. a package that failed to load or save), or a failed delete. */
+	UPROPERTY()
+	TArray<FString> Remaining;
+};
+
 /**
  * Support assets for VFX work: textures, render targets, material and Niagara parameter collections, Niagara effect
  * types, plus generic asset operations (read / set any editable property, duplicate, find references).
@@ -568,5 +619,25 @@ public:
 	UFUNCTION(meta = (AICallable, AIAccessMode = "Read"), Category = "Assets|Textures")
 	static FToolsetImage ViewTexture(UTexture2D* Texture, const FString& Channels = TEXT("All"), int32 GridColumns = 0, int32 GridRows = 0, int32 Size = 512);
 
+
+	/**
+	 * Merges duplicate assets: every reference to a duplicate (materials, Niagara systems, any asset, loaded or not) is
+	 * moved to the kept asset, then the duplicate is deleted. Works on whole groups at once; run with bDryRun = true
+	 * first to see what would happen. Cannot be undone (Undo and restore points do not cover deletes). Closes all open
+	 * asset editors (the engine's consolidation requires it).
+	 * Textures are only merged when their source pixels are byte-identical (same size, format, mips, slices and
+	 * source payload) and, unless bAllowSettingDifferences, the same SRGB / CompressionSettings / LODGroup /
+	 * MipGenSettings / Filter / AddressX / AddressY / bFlipGreenChannel / CompressionNoAlpha, so nothing that used a
+	 * duplicate changes look. Other asset classes need bAllowNonTextures (no content check is done for them).
+	 * Example group: "/Game/FX/T_Smoke|/Game/Packs/T_Smoke_copy|/Game/Old/T_Smoke2" keeps T_Smoke.
+	 *
+	 * @param Groups One entry per group: the asset to keep, then its duplicates, separated by "|" (package or object paths; at most 200 groups per call)
+	 * @param bDryRun Only check and report; change nothing
+	 * @param bAllowSettingDifferences Also merge textures whose settings (sRGB, compression, ...) differ; users of a duplicate then get the kept texture's settings
+	 * @param bAllowNonTextures Allow groups of non-texture assets (same class required, content is not compared)
+	 * @return Per-group result, counts, saved packages and redirector fix-up
+	 */
+	UFUNCTION(meta = (AICallable, AIAccessMode = "Write"), Category = "Assets")
+	static FAssetMcpConsolidateResult ConsolidateAssets(const TArray<FString>& Groups, bool bDryRun = true, bool bAllowSettingDifferences = false, bool bAllowNonTextures = false);
 	// ==== v0.5 VISION: end ====
 };

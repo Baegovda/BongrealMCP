@@ -27,6 +27,14 @@ Unreal MCP는 툴셋 결과를 모두 텍스트로 감쌉니다. 그래서 `call
 모든 편집은 **Undo 트랜잭션** 안에서 실행되므로 Ctrl+Z로 되돌릴 수 있습니다.
 스택 편집은 나이아가라 에디터 UI와 같은 스택 뷰모델을 거칩니다. 그래서 시스템을 나이아가라 에디터에 열어 둔 상태에서도 동작합니다.
 
+## 0.5.7 중복 에셋 통합
+
+- 새 도구 `ConsolidateAssets`: 중복 에셋 그룹(남길 에셋|사본|사본...)을 받아, 사본을 쓰던 머티리얼·나이아가라 등 모든 참조를 남길 에셋으로 옮겨 저장하고 사본을 지웁니다. 한 번에 최대 200그룹.
+- 텍스처는 원본 픽셀 데이터가 바이트 단위로 같을 때만 합칩니다(크기·포맷·밉·소스 압축까지 비교). sRGB·압축 설정 등이 다르면 기본적으로 건너뜁니다(`bAllowSettingDifferences`).
+- `bDryRun = true`(기본값)로 먼저 무엇이 합쳐질지 확인할 수 있습니다. 실제 실행은 되돌릴 수 없고 열린 에셋 편집기를 모두 닫습니다.
+- 엔진의 리디렉터 정리 창(모달)을 띄우지 않도록, 사본을 쓰는 패키지를 미리 불러와 바로 다시 저장하고 아무도 쓰지 않는 리디렉터만 지웁니다.
+- 테스트 `Assets.ConsolidateDuplicates` 추가. 33개 모두 Success.
+
 ## 0.5.6 charge_burst 레시피
 
 - 새 레시피 `charge_burst`: 모았다가 터뜨리는 이펙트입니다. 1초 동안 파란 줄무늬가 가속하며 중심으로 빨려 들어가고(생성량도 점점 증가), 코어가 떨리며 커지다가 직전에 움츠러듭니다. 1.0초에 흰 섬광, 밀려 나갔다 멈추는 광채, 줄무늬 160개가 튀어 나가 드래그로 급정지합니다.
@@ -248,7 +256,7 @@ VFX 작업에 필요한 보조 에셋을 다룹니다.
 
 | 분류 | 도구 |
 |---|---|
-| 범용 | `GetAssetProperties` / `SetAssetProperty`(어떤 에셋이든 편집 가능한 속성, `A.B[0].C` 경로), `DuplicateAsset`, `GetAssetReferences`(이 에셋을 쓰는 곳 / 이 에셋이 쓰는 것) |
+| 범용 | `GetAssetProperties` / `SetAssetProperty`(어떤 에셋이든 편집 가능한 속성, `A.B[0].C` 경로), `DuplicateAsset`, `GetAssetReferences`(이 에셋을 쓰는 곳 / 이 에셋이 쓰는 것), `ConsolidateAssets`(중복 에셋 통합: 참조를 남길 에셋으로 옮기고 사본 삭제, 드라이런 지원) |
 | 텍스처 | `ImportTexture`(PNG·TGA·EXR 등, 대화상자 없음, sRGB·압축 설정), `GetTextureInfo`, `CreateFlipbookTexture`(프레임 → SubUV 아틀라스) |
 | 렌더 타깃 | `CreateRenderTarget2D`, `ResizeRenderTarget2D`, `DrawMaterialToRenderTarget`, `CreateTextureFromRenderTarget`(머티리얼로 노이즈·마스크 텍스처를 구워 만들기) |
 | 파라미터 컬렉션 | `CreateMaterialParameterCollection`, `SetMaterialParameterCollectionParameter`, `GetMaterialParameterCollection`, `CreateNiagaraParameterCollection`, `AddNiagaraParameterCollectionParameter`, `GetNiagaraParameterCollection` |
